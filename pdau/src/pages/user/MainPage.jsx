@@ -8,12 +8,39 @@ const MainPage = () => {
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   useEffect(() => {
+    // Ir al inicio de la página cuando se carga el componente
+    window.scrollTo(0, 0);
+    
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
     };
 
+    // Función para forzar scroll al inicio
+    const forceScrollToTop = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+
+    // Ejecutar inmediatamente
+    forceScrollToTop();
+    
+    // Ejecutar después de un pequeño delay para asegurar que se ejecute después del render
+    setTimeout(forceScrollToTop, 0);
+    setTimeout(forceScrollToTop, 100);
+    
+    // También ejecutar cuando la página esté completamente cargada
+    const handleLoad = () => {
+      forceScrollToTop();
+    };
+    
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('load', handleLoad);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('load', handleLoad);
+    };
   }, []);
 
   // Estilos responsive para diferentes tamaños de pantalla

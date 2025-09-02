@@ -25,6 +25,30 @@ const RegisterSection = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Ir al inicio de la página cuando se carga el componente
+    window.scrollTo(0, 0);
+    
+    // Función para forzar scroll al inicio
+    const forceScrollToTop = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+
+    // Ejecutar inmediatamente
+    forceScrollToTop();
+    
+    // Ejecutar después de un pequeño delay para asegurar que se ejecute después del render
+    setTimeout(forceScrollToTop, 0);
+    setTimeout(forceScrollToTop, 100);
+    
+    // También ejecutar cuando la página esté completamente cargada
+    const handleLoad = () => {
+      forceScrollToTop();
+    };
+    
+    window.addEventListener('load', handleLoad);
+    
     const fetchCategories = async () => {
       try {
         const data = await ComplaintService.getAllCategories();
@@ -37,6 +61,10 @@ const RegisterSection = () => {
     };
 
     fetchCategories();
+    
+    return () => {
+      window.removeEventListener('load', handleLoad);
+    };
   }, []);
 
   useEffect(() => {
@@ -85,8 +113,8 @@ const RegisterSection = () => {
 
   const confirmCancel = () => {
     setShowCancelModal(false);
-    // Navega a la página anterior en el historial
-    window.history.back();
+    // Navega a la página de inicio
+    navigate("/");
   };
 
   const closeCancelModal = () => {

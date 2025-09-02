@@ -11,11 +11,11 @@ const Header = () => {
           style={styles.logo}
         />
       </Link>
-      <Link to="/" style={styles.titleContainer}>
+      <div style={styles.titleContainer}>
         <p style={styles.titulo}>
           Plataforma de Denuncias Anónimas
         </p>
-      </Link>
+      </div>
     </header>
   );
 };
@@ -23,7 +23,7 @@ const Header = () => {
 const styles = {
   header: {
     background: 'linear-gradient(90deg,rgb(34, 49, 82) 0%,rgb(37, 99, 235) 100%)',
-    padding: '0.5rem 2rem',
+    padding: '0.2rem 2rem', // Reducido un poco el padding vertical
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -31,7 +31,7 @@ const styles = {
     top: 0,
     left: 0,
     width: '100%',
-    height: '100px',
+    height: '85px', // Altura reducida ligeramente
     zIndex: 50,
     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
     cursor: 'default',
@@ -79,7 +79,7 @@ const styles = {
     width: '100%',
     display: 'block',
     paddingLeft: '0rem',
-    paddingRight: '1rem', // Agrega un padding a la izquierda para moverlo un poco
+    paddingRight: '1.2rem', // Agrega un padding a la izquierda para moverlo un poco
   },
   
 };
