@@ -63,7 +63,7 @@ const RegisterSection = () => {
     const complaintData = {
       titulo: title,
       descripcion: description,
-      categoriaIds: selectedCategories.map((category) => category.id),
+      categoriasIds: selectedCategories.map((category) => category.id),
     };
 
     try {

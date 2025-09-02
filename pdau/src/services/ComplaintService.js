@@ -4,7 +4,7 @@ const ComplaintService = {
   // Obtener todas las denuncias
   getAllComplaints: async () => {
     try {
-      const response = await axios.get("/denuncias/list");
+      const response = await axios.get("/api/denuncias/list");
       return response.data;
     } catch (error) {
       console.error("Error al obtener las denuncias:", error);
@@ -15,7 +15,7 @@ const ComplaintService = {
   // Obtener una denuncia por ID
   getComplaintById: async (id) => {
     try {
-      const response = await axios.get(`/denuncias/${id}`);
+      const response = await axios.get(`/api/denuncias/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error al obtener la denuncia con ID ${id}:`, error);
@@ -26,7 +26,7 @@ const ComplaintService = {
   // Obtener una denuncia por token
   getComplaintByToken: async (token) => {
     try {
-      const response = await axios.get(`/denuncias/token/${token}`);
+      const response = await axios.get(`/api/denuncias/token/${token}`);
       console.log("Respuesta de la API:", response.data); // Depuración 
       return response.data;
     } catch (error) {
@@ -38,7 +38,7 @@ const ComplaintService = {
   // Crear una nueva denuncia
   createComplaint: async (complaintData) => {
     try {
-      const response = await axios.post("/denuncias", complaintData);
+      const response = await axios.post("/api/denuncias", complaintData);
       return response.data;
     } catch (error) {
       console.error("Error al crear la denuncia:", error);
@@ -49,7 +49,7 @@ const ComplaintService = {
   // Actualizar una denuncia existente
   updateComplaint: async (id, complaintData) => {
     try {
-      const response = await axios.put(`/denuncias/${id}`, complaintData);
+      const response = await axios.put(`/api/denuncias/${id}`, complaintData);
       return response.data;
     } catch (error) {
       console.error(`Error al actualizar la denuncia con ID ${id}:`, error);
@@ -60,7 +60,7 @@ const ComplaintService = {
   // Eliminar una denuncia por ID
   deleteComplaint: async (id) => {
     try {
-      await axios.delete(`/denuncias/${id}`);
+      await axios.delete(`/api/denuncias/${id}`);
     } catch (error) {
       console.error(`Error al eliminar la denuncia con ID ${id}:`, error);
       throw error;
@@ -70,7 +70,7 @@ const ComplaintService = {
   // Obtener denuncias por categoría
   getComplaintsByCategory: async (categoryId) => {
     try {
-      const response = await axios.get(`/denuncias/categorias/${categoryId}`);
+      const response = await axios.get(`/api/denuncias/categorias/${categoryId}`);
       return response.data;
     } catch (error) {
       console.error(`Error al obtener denuncias de la categoría con ID ${categoryId}:`, error);
@@ -81,7 +81,7 @@ const ComplaintService = {
   // Obtener todas las categorías
   getAllCategories: async () => {
     try {
-      const response = await axios.get("/categorias/list");
+      const response = await axios.get("/api/categorias/list");
       return response.data;
     } catch (error) {
       console.error("Error al obtener las categorías:", error);
@@ -92,7 +92,7 @@ const ComplaintService = {
   // Obtener una categoría por ID
   getCategoryById: async (id) => {
     try {
-      const response = await axios.get(`/categorias/${id}`);
+      const response = await axios.get(`/api/categorias/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error al obtener la categoría con ID ${id}:`, error);

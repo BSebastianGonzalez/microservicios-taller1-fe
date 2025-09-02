@@ -1,13 +1,70 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/logo.png" />
+    <link rel="icon" type="image/png" href="/img/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- El título se actualizará dinámicamente desde React -->
     <title>PDAU</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Script mejorado para actualizar el título según la ruta actual
+      // Ahora soporta la ruta de consulta, registrar y otras rutas básicas
+      function actualizarTitulo() {
+        const path = window.location.pathname;
+        let titulo = "PDAU";
+        if (path === "/") {
+          titulo = "Inicio | PDAU";
+        } else if (
+          path.startsWith("/consulta") ||
+          path.startsWith("/consult") // Soporta tanto /consulta como /consult
+        ) {
+          // Si la ruta es exactamente /law_frame, mostrar "Consultar Marco Legal"
+          if (path === "/law_frame") {
+            titulo = "Consultar Marco Legal | PDAU";
+          } else {
+            titulo = "Consultar Denuncia | PDAU";
+          }
+        } else if (
+          path.startsWith("/registrar") ||
+          path.startsWith("/register") || // Soporta tanto /registrar como /register
+          path === "/complaint" // También para la ruta /complaint
+        ) {
+          titulo = "Registrar Denuncia | PDAU";
+        } else if (path === "/law_frame") {
+          titulo = "Consultar Marco Legal | PDAU";
+        } else if (path.startsWith("/legal")) {
+          titulo = "Avisos Legales | PDAU";
+        } else if (path.startsWith("/denuncia")) {
+          titulo = "Nueva denuncia | PDAU";
+        }
+        document.title = titulo;
+      }
+
+      // Actualiza al cargar
+      actualizarTitulo();
+
+      // Escucha cambios de historial
+      window.addEventListener("popstate", actualizarTitulo);
+
+      // Detecta cambios con pushState
+      (function(history){
+        const pushState = history.pushState;
+        history.pushState = function(state) {
+          if (typeof history.onpushstate == "function") {
+            history.onpushstate({state: state});
+          }
+          const ret = pushState.apply(history, arguments);
+          actualizarTitulo();
+          return ret;
+        };
+      })(window.history);
+
+      // Opcional: Detecta cambios de hash (por si usas hash routing)
+      window.addEventListener("hashchange", actualizarTitulo);
+    </script>
   </body>
 </html>

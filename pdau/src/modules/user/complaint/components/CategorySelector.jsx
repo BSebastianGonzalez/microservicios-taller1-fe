@@ -12,7 +12,7 @@ const CategorySelector = ({ categories, onSelect }) => {
   const safeCategories = Array.isArray(categories) ? categories : [];
 
   useEffect(() => {
-    console.log("CategorySelector received categories:", categories); // Debug log
+    //console.log("CategorySelector received categories:", categories); // Debug log
     
     // Filtrar categorías solo si categories es un array válido
     if (Array.isArray(safeCategories)) {
@@ -126,26 +126,11 @@ const CategorySelector = ({ categories, onSelect }) => {
       color: '#ef4444',
       fontSize: '0.875rem',
       marginTop: '0.5rem',
-    },
-    debug: {
-      backgroundColor: '#fef3c7',
-      border: '1px solid #f59e0b',
-      padding: '0.5rem',
-      borderRadius: '0.375rem',
-      marginBottom: '0.5rem',
-      fontSize: '0.75rem',
     }
   };
 
   return (
     <div style={styles.container} ref={dropdownRef}>
-      {/* Debug info */}
-      <div style={styles.debug}>
-        <strong>Debug:</strong> categories = {JSON.stringify(categories)}<br/>
-        <strong>Type:</strong> {typeof categories}<br/>
-        <strong>Is Array:</strong> {Array.isArray(categories).toString()}<br/>
-        <strong>Length:</strong> {Array.isArray(categories) ? categories.length : 'N/A'}
-      </div>
 
       <div style={styles.selectedTags}>
         {selectedCategories.map((category) => (

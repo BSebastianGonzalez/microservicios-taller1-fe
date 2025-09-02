@@ -87,7 +87,7 @@ const styles = {
     paddingBottom: "15rem", // Reducido de 20rem a 2rem
   },
   title: {
-    fontSize: "clamp(2.5rem, 6vw, 4rem)",
+    fontSize: "clamp(2.5rem, 6vw, 3.5rem)",
     fontWeight: "900",
     textAlign: "center",
     marginTop: "1.5rem",
