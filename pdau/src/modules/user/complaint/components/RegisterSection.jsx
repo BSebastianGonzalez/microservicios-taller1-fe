@@ -102,12 +102,13 @@ const RegisterSection = () => {
   };
 
   return (
-    <section style={styles.section}>
+    <div style={styles.pageContainer}>
+      <div style={styles.mainContent}>
       {/* Modal de carga animado */}
       {loadingModal && (
         <div style={modalStyles.overlay}>
           <div style={modalStyles.content(isLoadingModalOpen)}>
-            <span style={modalStyles.title}>
+            <span style={modalStyles.titlemodal}>
               Enviando denuncia. Esto podría demorar un poco.
             </span>
             <div style={modalStyles.progressBarContainer}>
@@ -121,7 +122,7 @@ const RegisterSection = () => {
       {showCancelModal && (
         <div style={modalStyles.overlay}>
           <div style={modalStyles.content(true)}>
-            <span style={modalStyles.title}>
+            <span style={modalStyles.titlemodal}>
               ¿Estás seguro de que deseas cancelar la denuncia?
             </span>
             <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
@@ -144,7 +145,7 @@ const RegisterSection = () => {
       {showIncompleteModal && (
         <div style={modalStyles.overlay}>
           <div style={modalStyles.content(true)}>
-            <span style={modalStyles.title}>
+            <span style={modalStyles.titlemodal}>
               Por favor, complete todos los campos obligatorios antes de enviar la denuncia.
             </span>
             <Button
@@ -161,7 +162,7 @@ const RegisterSection = () => {
       {showErrorModal && (
         <div style={modalStyles.overlay}>
           <div style={modalStyles.content(true)}>
-            <span style={modalStyles.title}>
+            <span style={modalStyles.titlemodal}>
               {errorMessage}
             </span>
             <Button
@@ -175,7 +176,7 @@ const RegisterSection = () => {
       )}
 
       <h1 style={styles.title}>
-        Registro de denuncia anónima
+        Registro de Denuncia Anónima
       </h1>
       <p style={styles.obligatoryText}>
         Los campos obligatorios se indican con{" "}
@@ -257,7 +258,8 @@ const RegisterSection = () => {
           onClick={handleCancel}
         />
       </div>
-    </section>
+      </div>
+    </div>
   );
 };
 
@@ -293,7 +295,7 @@ const modalStyles = {
     position: "relative",
     overflow: "hidden",
   }),
-  title: {
+  titlemodal: {
     fontSize: "1.15rem",
     fontWeight: 700,
     marginBottom: "1.2rem",
@@ -321,85 +323,129 @@ const modalStyles = {
 };
 
 const styles = {
-  section: {
+  pageContainer: {
+    display: "flex",
+    flexDirection: "column",
+    minHeight: "100vh",
+    width: "100%",
+    boxSizing: "border-box",
     position: "relative",
-    padding: "2rem 1rem",
-    maxWidth: "800px",
+    cursor: 'default',
+  },
+  mainContent: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    width: "100%",
+    maxWidth: "100%",
     margin: "0 auto",
-    backgroundColor: "#ffffff", // Fondo blanco explícito
-    minHeight: "400px", // Altura mínima para asegurar que se vea
+    flex: 1,
+    boxSizing: "border-box",
+    padding: "3.5rem 1rem",
+    //padding: "3.5rem clamp(0rem, 2vw, 0rem)",
+    paddingBottom: "11rem",
+    cursor: 'default',
   },
   title: {
-    fontSize: "clamp(1.5rem, 4vw, 2rem)",
+    fontSize: "clamp(2.5rem, 6vw, 3.5rem)",
+    fontWeight: "900",
     textAlign: "center",
-    fontWeight: "bold",
-    color: "#1e293b",
-    marginBottom: "1rem",
-    letterSpacing: "0.025em",
+    marginTop: "-5rem",
+    marginBottom: "1.5rem",
+    color: "#2563eb",
+    width: "100%",
+    letterSpacing: "0.3px",
+    textShadow: "0 2px 12px rgba(37,99,235,0.10), 0 1px 2px rgba(30,41,59,0.10)",
+    background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text",
+    cursor: 'default',
+    lineHeight: 1.1,
+    boxSizing: "border-box",
   },
   obligatoryText: {
-    textAlign: "left",
-    color: "#6b7280",
-    marginTop: "0.5rem",
-    marginBottom: "2rem",
-    fontSize: "0.875rem",
+    textAlign: "center",
+    color: "#000000",
+    marginBottom: "1rem",
+    fontSize: "clamp(0.875rem, 2vw, 1.2rem)",
     lineHeight: "1.5",
     display: "flex",
     alignItems: "center",
+    justifyContent: "center",
     gap: "0.5rem",
+    width: "100%",
+    maxWidth: "min(90vw, 600px)",
+    padding: "1rem",
+    //backgroundColor: "rgba(255,255,255,0.8)",
+    borderRadius: "0.75rem",
+    //border: "1px solid #e5e7eb",
+    //boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
   },
   fieldRow: {
     display: "flex",
     flexDirection: "column",
     gap: "1rem",
     marginTop: "2rem",
-    padding: "1.5rem",
-    backgroundColor: "#f9fafb",
-    borderRadius: "0.75rem",
+    padding: "clamp(1.5rem, 3vw, 2rem)",
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: "1rem",
     border: "1px solid #e5e7eb",
+    width: "100%",
+    maxWidth: "min(90vw, 800px)",
+    boxSizing: "border-box",
+    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
   },
   fieldRowSmall: {
     display: "flex",
     flexDirection: "column",
     gap: "1rem",
-    marginTop: "1rem",
-    padding: "1.5rem",
-    backgroundColor: "#f9fafb",
-    borderRadius: "0.75rem",
+    marginTop: "1.5rem",
+    padding: "clamp(1.5rem, 3vw, 2rem)",
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: "1rem",
     border: "1px solid #e5e7eb",
+    width: "100%",
+    maxWidth: "min(90vw, 800px)",
+    boxSizing: "border-box",
+    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
   },
   fieldLabel: {
     display: "flex",
     alignItems: "center",
-    gap: "0.5rem",
-    marginBottom: "0.5rem",
+    gap: "0.75rem",
+    marginBottom: "0.75rem",
   },
   obligatoryIcon: {
-    width: "1.5rem",
-    height: "1.5rem",
+    width: "clamp(1.25rem, 2vw, 1.5rem)",
+    height: "clamp(1.25rem, 2vw, 1.5rem)",
     filter: "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))",
   },
   hiddenObligatoryIcon: {
-    width: "1.5rem",
-    height: "1.5rem",
+    width: "clamp(1.25rem, 2vw, 1.5rem)",
+    height: "clamp(1.25rem, 2vw, 1.5rem)",
     visibility: "hidden",
   },
   loadingText: {
     color: "#6b7280",
-    fontSize: "0.875rem",
+    fontSize: "clamp(0.875rem, 2vw, 1rem)",
     fontStyle: "italic",
     textAlign: "center",
-    padding: "1rem",
-    backgroundColor: "#f3f4f6",
-    borderRadius: "0.5rem",
+    padding: "1.5rem",
+    backgroundColor: "rgba(243,244,246,0.8)",
+    borderRadius: "0.75rem",
     border: "1px solid #e5e7eb",
+    width: "100%",
+    boxSizing: "border-box",
   },
   actionButtons: {
     display: "flex",
     justifyContent: "center",
-    gap: "clamp(1rem, 3vw, 1.5rem)",
-    marginTop: "2rem",
+    gap: "clamp(1rem, 3vw, 2rem)",
+    marginTop: "3rem",
     flexWrap: "wrap",
+    width: "100%",
+    maxWidth: "min(90vw, 600px)",
   },
 };
 

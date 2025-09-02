@@ -94,7 +94,7 @@ const styles = {
     marginBottom: "2.5rem",
     color: "#2563eb",
     width: "100%",
-    letterSpacing: "1.5px",
+    letterSpacing: "0.3px",
     textShadow: "0 2px 12px rgba(37,99,235,0.10), 0 1px 2px rgba(30,41,59,0.10)",
     background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)",
     WebkitBackgroundClip: "text",

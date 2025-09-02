@@ -1,10 +1,46 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import UserLayout from "../../modules/user/layouts/UserLayout";
 import HomeButton from "../../modules/user/components/HomeButton";
 import Footer from "../../components/Footer";
 import { Link } from "react-router-dom";
 
 const MainPage = () => {
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Estilos responsive para diferentes tamaños de pantalla
+  const getResponsiveStyles = () => {
+    const isMobile = windowWidth <= 768;
+    const isTablet = windowWidth <= 1024 && windowWidth > 768;
+    
+    return {
+      cardsContainer: {
+        ...styles.cardsContainer,
+        flexDirection: isMobile ? "column" : "row",
+        gap: isMobile ? "1rem" : isTablet ? "1rem" : "clamp(1rem, 3vw, 2rem)",
+        justifyContent: "center",
+        alignItems: "center",
+        flexWrap: isMobile ? "nowrap" : "nowrap", // No envolver en desktop
+      },
+      card: {
+        ...styles.card,
+        flex: isMobile ? "0 0 auto" : isTablet ? "0 0 280px" : "0 0 300px",
+        width: isMobile ? "100%" : isTablet ? "280px" : "300px",
+        maxWidth: isMobile ? "400px" : isTablet ? "280px" : "300px",
+      }
+    };
+  };
+
+  const responsiveStyles = getResponsiveStyles();
+
   return (
     <div style={styles.pageContainer}>
       <UserLayout title="Client Home">
@@ -12,8 +48,8 @@ const MainPage = () => {
           <p style={styles.description}>
             Esta plataforma está diseñada para que cualquier persona pueda reportar de manera anónima situaciones como acoso, fraude, corrupción u otros incidentes en cualquier tipo de empresa u organización. Brindamos un espacio seguro y confidencial para realizar denuncias, facilitando el seguimiento de cada caso y promoviendo la responsabilidad y la transparencia en todos los ámbitos laborales y empresariales.
           </p>
-          <div style={styles.cardsContainer}>
-            <div style={styles.card}>
+          <div style={responsiveStyles.cardsContainer}>
+            <div style={responsiveStyles.card}>
               <Link to="/complaint" style={{ width: "100%", display: "flex", justifyContent: "center" }}>
                 <HomeButton
                   text="Registrar Denuncia Anónima"
@@ -25,7 +61,7 @@ const MainPage = () => {
                 Envía una denuncia de forma anónima, selecciona una categoría y adjunta evidencia opcional.
               </p>
             </div>
-            <div style={styles.card}>
+            <div style={responsiveStyles.card}>
               <Link to="/consult" style={{ width: "100%", display: "flex", justifyContent: "center" }}>
                 <HomeButton
                   text="Consultar Estado De Denuncia Anónima"
@@ -37,7 +73,7 @@ const MainPage = () => {
                 Usa tu token de seguimiento para conocer el estado y próximos pasos de tu denuncia.
               </p>
             </div>
-            <div style={styles.card}>
+            <div style={responsiveStyles.card}>
             <Link to="/law_frame" style={{ width: "100%", display: "flex", justifyContent: "center" }}>
                 <HomeButton
                     text="Consultar Marco Legal"
@@ -46,7 +82,7 @@ const MainPage = () => {
                   />
               </Link>
               <p style={styles.cardText}>
-                Usa tu token de seguimiento para conocer el estado y próximos pasos de tu denuncia.
+                Consulta las leyes y normativas relacionadas con denuncias y protección al denunciante.
               </p>
             </div>
           </div>
@@ -76,7 +112,7 @@ const styles = {
     margin: "0 auto",
     flex: 1,
     boxSizing: "border-box",
-    padding: "3.5rem 1rem",
+    padding: "clamp(2rem, 5vw, 3.5rem) clamp(1rem, 4vw, 2rem)",
     paddingBottom: "2rem",
     cursor: 'default',
   },
@@ -98,12 +134,13 @@ const styles = {
   },
   description: {
     textAlign: "center",
-    marginBottom: "4rem",
-    maxWidth: "min(50rem, 90vw)",
-    color: "#374151",
+    marginBottom: "clamp(2rem, 5vw, 4rem)",
+    //maxWidth: "min(50rem, 90vw)",
+    color: "#00000",
     lineHeight: "1.6",
     fontSize: "clamp(1rem, 2.5vw, 1.2rem)",
     width: "100%",
+    padding: "0 1rem",
   },
   cardsContainer: {
     display: "flex",
@@ -112,24 +149,25 @@ const styles = {
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    flexWrap: "nowrap", // No envolver, para que los tres estén en una sola fila
+    flexWrap: "nowrap", // No envolver para mantener las tres en fila
     maxWidth: "1200px", // Limita el ancho para centrar el grupo
     margin: "0 auto",   // Centra el contenedor horizontalmente
   },
   card: {
-    flex: "0 1 340px", // Fijo para que los tres tengan el mismo ancho y queden centrados
-    minWidth: "280px",
-    maxWidth: "340px",
+    flex: "0 0 300px", // Tamaño fijo para alineación perfecta
+    width: "300px",
+    height: "auto",
     borderRadius: "1rem",
     padding: "clamp(1.5rem, 3vw, 2rem)",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    margin: "1rem 0", // Solo margen vertical para evitar separación horizontal extra
+    margin: "0.5rem", // Margen uniforme
     transition: "transform 0.2s ease, box-shadow 0.2s ease",
     cursor: "pointer",
     backgroundColor: "#ffffff",
+    //boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
   },
   cardText: {
     fontSize: "clamp(0.875rem, 2vw, 1rem)",
