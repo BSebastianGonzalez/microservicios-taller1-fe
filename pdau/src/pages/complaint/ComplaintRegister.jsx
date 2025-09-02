@@ -23,7 +23,7 @@ const styles = {
     padding: "2rem 1rem",
     background: "#ffffff",
     borderRadius: "1rem",
-    boxShadow: "0 4px 24px 0 rgba(0,0,0,0.08)",
+    boxShadow: "10px 5px 34px 0 rgb(37, 99, 235) 100%",
     minHeight: "500px", // Altura mínima
   },
 };

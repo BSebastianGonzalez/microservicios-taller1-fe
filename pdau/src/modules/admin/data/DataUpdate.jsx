@@ -99,53 +99,53 @@ const DataUpdate = () => {
   }, [formData]);
 
   return (
-    <div className="h-screen p-8">
-      <h1 className="text-4xl font-bold mb-6">Actualizar datos personales</h1>
+    <div style={styles.container}>
+      <h1 style={styles.title}>Actualizar datos personales</h1>
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4 w-full max-w-md"
+        style={styles.form}
       >
-        <div>
-          <label className="block text-sm font-medium mb-1">Nombres</label>
+        <div style={styles.field}>
+          <label style={styles.label}>Nombres</label>
           <input
             type="text"
             name="nombre"
             value={formData.nombre}
             onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-red-500"
+            style={styles.input}
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Apellidos</label>
+        <div style={styles.field}>
+          <label style={styles.label}>Apellidos</label>
           <input
             type="text"
             name="apellido"
             value={formData.apellido}
             onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-red-500"
+            style={styles.input}
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Teléfono</label>
+        <div style={styles.field}>
+          <label style={styles.label}>Teléfono</label>
           <input
             type="text"
             name="telefono"
             value={formData.telefono}
             onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-red-500"
+            style={styles.input}
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Dirección</label>
+        <div style={styles.field}>
+          <label style={styles.label}>Dirección</label>
           <input
             type="text"
             name="direccion"
             value={formData.direccion}
             onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-red-500"
+            style={styles.input}
           />
         </div>
-        <div className="flex gap-4">
+        <div style={styles.buttonRow}>
           <Button
             text="Guardar cambios"
             className="bg-red-600 text-white hover:bg-red-700"
@@ -154,7 +154,7 @@ const DataUpdate = () => {
         </div>
       </form>
       {/* Botón Volver fuera del form */}
-      <div className="flex gap-4 mt-4">
+      <div style={styles.backRow}>
         <Button
           text="Volver"
           className="bg-red-600 text-white hover:bg-gray-400"
@@ -164,6 +164,89 @@ const DataUpdate = () => {
       </div>
     </div>
   );
+};
+
+const styles = {
+  container: {
+    minHeight: "100vh",
+    maxHeight: "100vh",
+    overflowY: "auto",
+    padding: "0",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    background: "#f3f6fa",
+    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+    justifyContent: "flex-start",
+  },
+  title: {
+    fontSize: "2rem",
+    fontWeight: 900,
+    marginTop: "2.5rem",
+    marginBottom: "2.5rem",
+    color: "#223053",
+    letterSpacing: "0.02em",
+    textShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+    textAlign: "center",
+    width: "100%",
+  },
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "1.1rem",
+    width: "100%",
+    maxWidth: "370px",
+    background: "#fff",
+    borderRadius: "1.1rem",
+    boxShadow: "0 8px 32px 0 rgba(30,58,138,0.10), 0 2px 8px 0 rgba(37,99,235,0.08)",
+    padding: "2rem 1.5rem 1.5rem 1.5rem",
+    border: "1.2px solid #e0e7ef",
+    margin: "0 auto",
+    boxSizing: "border-box",
+    alignItems: "stretch",
+  },
+  field: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.2rem",
+    marginBottom: "0.1rem",
+  },
+  label: {
+    fontSize: "1rem",
+    fontWeight: 700,
+    color: "#223053",
+    marginBottom: "0.08rem",
+    letterSpacing: "0.01em",
+    paddingLeft: "0.1rem",
+  },
+  input: {
+    width: "100%",
+    padding: "0.7rem 1rem",
+    border: "1.2px solid #cbd5e1",
+    borderRadius: "0.7rem",
+    background: "#f6f8fb",
+    fontSize: "1rem",
+    color: "#223053",
+    fontWeight: 500,
+    outline: "none",
+    boxShadow: "0 1.5px 6px 0 rgba(30,58,138,0.03)",
+    transition: "border 0.2s, box-shadow 0.2s",
+    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+  },
+  buttonRow: {
+    display: "flex",
+    gap: "1rem",
+    marginTop: "1.2rem",
+    justifyContent: "center",
+    width: "100%",
+  },
+  backRow: {
+    display: "flex",
+    gap: "1rem",
+    marginTop: "1.2rem",
+    justifyContent: "center",
+    width: "100%",
+  },
 };
 
 export default DataUpdate;

@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import Button from "../../../components/Button"; // Importar el componente Button
+import Button from "../../../components/Button";
 
 const DataSection = () => {
   // Obtener los datos del administrador desde localStorage
@@ -12,73 +12,157 @@ const DataSection = () => {
     direccion: "N/A",
   };
 
-  console.log("Datos recibidos en DataSection:", adminData);
-
   const navigate = useNavigate();
 
   const handleUpdateClick = () => {
-    navigate("/data_update", { state: { adminData } }); // Redirigir con los datos actuales
+    navigate("/data_update", { state: { adminData } });
   };
 
   return (
-    <div className="h-screen p-8">
-      <h1 className="text-4xl font-bold mb-6">Datos personales</h1>
-      <div className="flex flex-col gap-4 w-full max-w-md">
-        <div>
-          <label className="block text-sm font-medium mb-1">Nombres</label>
+    <div style={styles.container}>
+      <h1 style={styles.title}>Datos personales</h1>
+      <div style={styles.form}>
+        <div style={styles.field}>
+          <label style={styles.label}>Nombres</label>
           <input
             type="text"
             value={adminData.nombre}
             readOnly
-            className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none bg-gray-100"
+            style={styles.input}
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Apellidos</label>
+        <div style={styles.field}>
+          <label style={styles.label}>Apellidos</label>
           <input
             type="text"
             value={adminData.apellido}
             readOnly
-            className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none bg-gray-100"
+            style={styles.input}
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Correo</label>
+        <div style={styles.field}>
+          <label style={styles.label}>Correo</label>
           <input
             type="email"
             value={adminData.correo}
             readOnly
-            className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none bg-gray-100"
+            style={styles.input}
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Teléfono</label>
+        <div style={styles.field}>
+          <label style={styles.label}>Teléfono</label>
           <input
             type="text"
             value={adminData.telefono}
             readOnly
-            className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none bg-gray-100"
+            style={styles.input}
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Dirección</label>
+        <div style={styles.field}>
+          <label style={styles.label}>Dirección</label>
           <input
             type="text"
             value={adminData.direccion}
             readOnly
-            className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none bg-gray-100"
+            style={styles.input}
+          />
+        </div>
+        <div style={styles.buttonContainer}>
+          <Button
+            text="Actualizar datos"
+            className="bg-red-600 text-white hover:bg-red-700"
+            onClick={handleUpdateClick}
           />
         </div>
       </div>
-      <div className="mt-6">
-        <Button
-          text="Actualizar datos"
-          className="bg-red-600 text-white hover:bg-red-700"
-          onClick={handleUpdateClick}
-        />
-      </div>
     </div>
   );
+};
+
+const styles = {
+  container: {
+    // Ajusta el ancho restando el sidebar (260px) y centra el contenido
+    width: "100%",
+    minWidth: "100vh",
+    maxWidth: "100vh",
+    boxSizing: "border-box",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center", // Centra verticalmente si el padre lo permite
+    padding: "3rem 3rem",
+    marginLeft: "260px", // Deja espacio para el sidebar fijo
+    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+    minHeight: "100vh", // Para que el contenido esté centrado verticalmente
+  },
+  title: {
+    fontSize: "2.5rem",
+    fontWeight: 900,
+    marginBottom: "2.5rem",
+    marginTop: "-15rem",
+    color: "#223053",
+    letterSpacing: "0.02em",
+    textShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
+    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+    lineHeight: "1.1",
+    textAlign: "center",
+    width: "100%",
+  },
+  form: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "1rem 5rem",
+    width: "100%",
+    maxWidth: "900px",
+    background: "rgba(255, 255, 255, 0.99)",
+    borderRadius: "1.5rem",
+    boxShadow: "0 8px 32px 0 rgba(30,58,138,0.13), 0 2px 8px 0 rgba(37,99,235,0.10)",
+    padding: "2rem 3rem",
+    border: "1.5px solid #e0e7ef",
+    transition: "box-shadow 0.25s cubic-bezier(.4,0,.2,1)",
+    alignItems: "start",
+    boxSizing: "border-box",
+    margin: "0 auto", // Centra el form horizontalmente
+    justifySelf: "center", // Centra el form si el contenedor es grid
+    alignSelf: "center",   // Centra el form si el contenedor es grid/flex
+    placeSelf: "center",   // Centra el form completamente dentro del grid/flex parent
+  },
+  field: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.5rem",
+    marginBottom: "0.2rem",
+    gridColumn: "span 1",
+  },
+  label: {
+    fontSize: "1.08rem",
+    fontWeight: 700,
+    color: "#223053",
+    marginBottom: "0.15rem",
+    letterSpacing: "0.015em",
+    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+  },
+  input: {
+    width: "100%",
+    padding: "0.85rem 1.5rem",
+    border: "1.5px solid #cbd5e1",
+    borderRadius: "0.9rem",
+    background: "#f6f8fb",
+    fontSize: "1.08rem",
+    color: "#223053",
+    fontWeight: 500,
+    outline: "none",
+    boxShadow: "0 2px 8px 0 rgba(30,58,138,0.04)",
+    transition: "border 0.2s, box-shadow 0.2s",
+    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+  },
+  buttonContainer: {
+    marginTop: "2rem",
+    display: "flex",
+    justifyContent: "center",
+    width: "100%",
+    gridColumn: "1 / -1",
+  },
 };
 
 export default DataSection;

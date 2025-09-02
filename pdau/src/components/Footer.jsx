@@ -9,7 +9,11 @@ const Footer = () => {
         {/* Columna izquierda - PQRSD */}
         <div style={styles.column}>
           <div style={styles.logo}>
-            <div style={styles.ufpsLogo}>PDAU</div>
+            <img
+              src="/img/logo.png"
+              alt="Logo PDAU"
+              style={{ width: "60px", height: "auto", marginBottom: "0.5rem", objectFit: "contain", border: "none" }}
+            />
             <h3 style={styles.pqrsdTitle}>Plataforma de Denuncias Anónimas</h3>
           </div>
           <p style={styles.description}>
@@ -48,7 +52,7 @@ const Footer = () => {
 
 const styles = {
   footer: {
-    backgroundColor: '#1a1e23',
+    backgroundColor: '#14191f',
     color: 'white',
     padding: '2rem 1rem 1rem 1rem',
     width: '100%',

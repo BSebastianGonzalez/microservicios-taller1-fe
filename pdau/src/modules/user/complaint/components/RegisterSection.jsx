@@ -13,7 +13,6 @@ const RegisterSection = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [files, setFiles] = useState([]);
   const [loadingModal, setLoadingModal] = useState(false);
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
 
@@ -52,10 +51,6 @@ const RegisterSection = () => {
     setSelectedCategories(categories);
   };
 
-  const handleFilesChange = (files) => {
-    setFiles(files);
-    // console.log("Archivos seleccionados:", files);
-  };
 
   const handleSubmit = async () => {
     if (!title || !description || selectedCategories.length === 0) {
@@ -74,14 +69,7 @@ const RegisterSection = () => {
     try {
       const response = await ComplaintService.createComplaint(complaintData);
       const token = response.token;
-      const denunciaId = response.id;
-
-      if (files && files.length > 0 && denunciaId) {
-        for (const file of files) {
-          await ComplaintService.uploadFile(file, denunciaId);
-        }
-      }
-
+      
       setLoadingModal(false);
       navigate("/finished_register", { state: { token } });
     } catch {
@@ -255,18 +243,6 @@ const RegisterSection = () => {
         )}
       </div>
 
-      {/* Campo de Subir Archivo de Evidencia */}
-      <div style={styles.fieldRowSmall}>
-        <div style={styles.fieldLabel}>
-          <img
-            src="img/obligatory.svg"
-            alt="Campo obligatorio"
-            style={styles.hiddenObligatoryIcon}
-          />
-          <Tag text="Subir archivo de evidencia" />
-        </div>
-        <FileUploader onFilesChange={handleFilesChange} />
-      </div>
 
       {/* Botones de acción */}
       <div style={styles.actionButtons}>

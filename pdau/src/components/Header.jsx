@@ -5,7 +5,11 @@ const Header = () => {
   return (
     <header style={styles.header}>
       <Link to="/" style={styles.logoContainer}>
-        <div style={styles.logo}>PDAU</div>
+        <img
+          src="/img/logo.png"
+          alt="Logo PDAU"
+          style={styles.logo}
+        />
       </Link>
       <Link to="/" style={styles.titleContainer}>
         <p style={styles.titulo}>
@@ -18,7 +22,7 @@ const Header = () => {
 
 const styles = {
   header: {
-    background: 'linear-gradient(90deg,rgb(34, 49, 82) 0%,rgb(255, 255, 255) 100%)',
+    background: 'linear-gradient(90deg,rgb(34, 49, 82) 0%,rgb(37, 99, 235) 100%)',
     padding: '0.5rem 2rem',
     display: 'flex',
     alignItems: 'center',
@@ -40,23 +44,17 @@ const styles = {
     cursor: 'default',
   },
   // Para centrar las letras vertical y horizontalmente en el cuadro, usa display: 'flex', alignItems: 'center' y justifyContent: 'center'
+  // Ajustado para mostrar correctamente una imagen en vez de un cuadro de letras
   logo: {
     objectFit: 'contain',
-    height: '2.5rem',
-    width: '2.5rem',
-    padding: '0.75rem',
-    display: 'flex',
-    backgroundColor: '#dc2626',
-    color: 'white',
-    textAlign: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: '800',
-    fontSize: '1.2rem',
-    borderRadius: '8px',
-    boxShadow: '0 4px 8px rgba(252, 0, 0, 0.3)',
-    border: '2px solid #ffffff',
-    textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+    height: '3.5rem',
+    width: '3.5rem',
+    padding: 0,
+    display: 'block',
+    backgroundColor: 'transparent',
+    border: 'none',
+    boxShadow: 'none',
+    borderRadius: '0px', // Sin bordes redondeados, completamente rectangular
     transition: 'all 0.3s ease',
     cursor: 'pointer',
   },
@@ -75,11 +73,13 @@ const styles = {
     fontWeight: 'bold',
     lineHeight: '2.5rem',
     margin: 0,
-    textAlign: 'center',
+    textAlign: 'center', // Cambiado de 'center' a 'left' para mover el título a la izquierda
     letterSpacing: '0.5px',
     userSelect: 'none',
-    width: '100%', // Hace que el texto ocupe todo el ancho del contenedor para centrarlo
+    width: '100%',
     display: 'block',
+    paddingLeft: '0rem',
+    paddingRight: '1rem', // Agrega un padding a la izquierda para moverlo un poco
   },
   
 };

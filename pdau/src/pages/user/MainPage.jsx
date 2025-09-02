@@ -37,6 +37,18 @@ const MainPage = () => {
                 Usa tu token de seguimiento para conocer el estado y próximos pasos de tu denuncia.
               </p>
             </div>
+            <div style={styles.card}>
+            <Link to="/law_frame" style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+                <HomeButton
+                    text="Consultar Marco Legal"
+                    imageSrc="img/law_consult.png"
+                    onClick={() => console.log("Consultar Marco Legal")}
+                  />
+              </Link>
+              <p style={styles.cardText}>
+                Usa tu token de seguimiento para conocer el estado y próximos pasos de tu denuncia.
+              </p>
+            </div>
           </div>
         </div>
       </UserLayout>
@@ -98,26 +110,26 @@ const styles = {
     flexDirection: "row",
     gap: "clamp(1rem, 3vw, 2rem)",
     width: "100%",
-    alignItems: "center", 
-    justifyContent: "center", 
-    flexWrap: "wrap",
-    maxWidth: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "nowrap", // No envolver, para que los tres estén en una sola fila
+    maxWidth: "1200px", // Limita el ancho para centrar el grupo
+    margin: "0 auto",   // Centra el contenedor horizontalmente
   },
   card: {
-    flex: "1 1 300px",
+    flex: "0 1 340px", // Fijo para que los tres tengan el mismo ancho y queden centrados
     minWidth: "280px",
-    maxWidth: "400px",
+    maxWidth: "340px",
     borderRadius: "1rem",
     padding: "clamp(1.5rem, 3vw, 2rem)",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    margin: "1rem",
+    margin: "1rem 0", // Solo margen vertical para evitar separación horizontal extra
     transition: "transform 0.2s ease, box-shadow 0.2s ease",
     cursor: "pointer",
     backgroundColor: "#ffffff",
-    
   },
   cardText: {
     fontSize: "clamp(0.875rem, 2vw, 1rem)",
