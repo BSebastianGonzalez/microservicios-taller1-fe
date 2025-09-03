@@ -1,9 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ListContainer from "../../../components/ListContainer";
 import Button from "../../../components/Button";
+import Footer from "../../../components/Footer";
 
 const LegalList = () => {
+  useEffect(() => {
+    // Ir al inicio de la página cuando se carga el componente
+    window.scrollTo(0, 0);
+    
+    // Función para forzar scroll al inicio
+    const forceScrollToTop = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+
+    // Ejecutar inmediatamente
+    forceScrollToTop();
+    
+    // Ejecutar después de un pequeño delay para asegurar que se ejecute después del render
+    setTimeout(forceScrollToTop, 0);
+    setTimeout(forceScrollToTop, 100);
+    
+    // También ejecutar cuando la página esté completamente cargada
+    const handleLoad = () => {
+      forceScrollToTop();
+    };
+    
+    window.addEventListener('load', handleLoad);
+    
+    return () => {
+      window.removeEventListener('load', handleLoad);
+    };
+  }, []);
+
   const laws = [
     {
       id: 1,
@@ -141,126 +172,180 @@ const LegalList = () => {
   const currentLaws = filteredLaws.slice(startIndex, endIndex);
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Listado de Leyes</h1>
+    <div style={styles.pageContainer}>
+      <div style={styles.container}>
+        <h1 style={styles.title}>Listado de Leyes</h1>
 
-      {/* Filtro y selector "Mostrar" en la misma fila */}
-      <div style={styles.filterRow}>
-        {/* Campo de búsqueda */}
-        <input
-          type="text"
-          value={keyword}
-          onChange={handleFilter}
-          placeholder="Buscar por nombre o descripción"
-          style={styles.input}
-        />
-
-        {/* Selector de elementos por página */}
-        <div style={styles.selectContainer}>
-          <label htmlFor="itemsPerPage" style={styles.label}>
-            Mostrar:
-          </label>
-          <select
-            id="itemsPerPage"
-            value={itemsPerPage}
-            onChange={(e) => {
-              setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1); // 👉 Reiniciar página
-            }}
-            style={styles.select}
-          >
-            <option value={3}>3</option>
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-          </select>
-        </div>
-      </div>
-
-      <ListContainer
-        currentPage={currentPage}
-        itemsPerPage={itemsPerPage}
-        totalItems={filteredLaws.length}
-        onPageChange={setCurrentPage}
-      >
-        <div style={styles.tableContainer}>
-          <table style={styles.table}>
-            <thead style={styles.thead}>
-              <tr>
-                <th style={{...styles.th, width: "40%"}}>Nombre</th>
-                <th style={{...styles.th, width: "60%"}}>Descripción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentLaws.map((law) => (
-                <tr
-                  key={law.id}
-                  style={styles.tr}
-                  onMouseOver={e => (e.currentTarget.style.backgroundColor = styles.trHover.backgroundColor)}
-                  onMouseOut={e => (e.currentTarget.style.backgroundColor = "")}
-                  onClick={() => handleRowClick(law.id)}
-                >
-                  <td style={styles.tdName}>
-                    {law.name}
-                  </td>
-                  <td style={styles.tdDesc}>
-                    {law.description}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </ListContainer>
-
-      {/* Botón "Volver" */}
-      <div style={styles.volverContainer}>
-        <Link to="/">
-          <Button
-            text="Volver"
-            // Puedes agregar estilos adicionales al botón si lo deseas
+        {/* Filtro y selector "Mostrar" en la misma fila */}
+        <div style={styles.filterRow}>
+          {/* Campo de búsqueda */}
+          <input
+            type="text"
+            value={keyword}
+            onChange={handleFilter}
+            placeholder="Buscar por nombre o descripción"
+            style={styles.input}
           />
-        </Link>
+
+          {/* Selector de elementos por página */}
+          <div style={styles.selectContainer}>
+            <label htmlFor="itemsPerPage" style={styles.label}>
+              Mostrar:
+            </label>
+            <select
+              id="itemsPerPage"
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1); // 👉 Reiniciar página
+              }}
+              style={styles.select}
+            >
+              <option value={3}>3</option>
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+            </select>
+          </div>
+        </div>
+
+        <ListContainer
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
+          totalItems={filteredLaws.length}
+          onPageChange={setCurrentPage}
+        >
+          <div style={styles.tableContainer}>
+            <table style={styles.table}>
+              <thead style={styles.thead}>
+                <tr>
+                  <th style={{...styles.th, width: "35%"}}>Nombre</th>
+                  <th style={{...styles.th, width: "65%"}}>Descripción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentLaws.map((law) => (
+                  <tr
+                    key={law.id}
+                    style={styles.tr}
+                    onMouseOver={e => (e.currentTarget.style.backgroundColor = styles.trHover.backgroundColor)}
+                    onMouseOut={e => (e.currentTarget.style.backgroundColor = "")}
+                    onClick={() => handleRowClick(law.id)}
+                  >
+                    <td style={styles.tdName}>
+                      {law.name}
+                    </td>
+                    <td style={styles.tdDesc}>
+                      {law.description}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ListContainer>
+
+        {/* Botón "Volver" */}
+        <div style={styles.volverContainer}>
+          <Link to="/">
+            <Button
+              text="Volver"
+              // Puedes agregar estilos adicionales al botón si lo deseas
+            />
+          </Link>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 }
 
 const styles = {
+  pageContainer: {
+    display: "flex",
+    flexDirection: "column",
+    minHeight: "100vh",
+    width: "100%",
+    boxSizing: "border-box",
+    position: "relative",
+  },
   container: {
-    padding: "2rem",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    width: "100%",
+    padding: "1rem",
+    boxSizing: "border-box",
+    flex: 1,
+    "@media (min-width: 640px)": {
+      padding: "1.5rem",
+    },
+    "@media (min-width: 1024px)": {
+      padding: "2rem",
+    },
   },
   title: {
-    fontSize: "2.25rem",
-    fontWeight: "bold",
-    marginBottom: "1.5rem",
+    fontSize: "clamp(2.5rem, 5vw, 3.5rem)",
+    fontWeight: "900",
     textAlign: "center",
+    marginBottom: "2rem",
+    marginTop: "1rem",
+    color: "#2563eb",
+    width: "100%",
+    maxWidth: "1200px",
+    letterSpacing: "1px",
+    textShadow: "0 2px 12px rgba(37,99,235,0.10), 0 1px 2px rgba(30,41,59,0.10)",
+    background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text",
+    "@media (min-width: 640px)": {
+      marginBottom: "2.5rem",
+    },
+    "@media (min-width: 1024px)": {
+      marginBottom: "3rem",
+    },
   },
   filterRow: {
     marginBottom: "1rem",
     display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: "column",
     gap: "1rem",
-    flexWrap: "wrap",
+    width: "100%",
+    maxWidth: "1200px",
+    "@media (min-width: 640px)": {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
   },
   input: {
     width: "100%",
-    maxWidth: "28rem",
     padding: "0.5rem 1rem",
     border: "1px solid #d1d5db",
     borderRadius: "0.5rem",
     boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
     outline: "none",
-    fontSize: "1rem",
+    fontSize: "0.875rem",
+    "@media (min-width: 640px)": {
+      maxWidth: "28rem",
+      fontSize: "1rem",
+    },
   },
   selectContainer: {
     display: "flex",
     alignItems: "center",
     gap: "0.5rem",
+    justifyContent: "flex-start",
+    "@media (min-width: 640px)": {
+      justifyContent: "flex-end",
+    },
   },
   label: {
-    fontSize: "1.125rem",
+    fontSize: "1rem",
     fontWeight: "500",
+    "@media (min-width: 640px)": {
+      fontSize: "1.125rem",
+    },
   },
   select: {
     padding: "0.5rem 0.75rem",
@@ -268,73 +353,105 @@ const styles = {
     borderRadius: "0.5rem",
     boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
     outline: "none",
-    fontSize: "1rem",
+    fontSize: "0.875rem",
+    "@media (min-width: 640px)": {
+      fontSize: "1rem",
+    },
   },
   tableContainer: {
-    overflow: "hidden",
-    borderRadius: "1rem",
+    overflow: "auto",
+    borderRadius: "0.5rem",
     boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
     marginTop: "1rem",
     border: "0.5px solid rgb(0, 0, 0)",
+    width: "100%",
+    margin: "1rem 0.5rem",
+    marginBottom: "3rem",
+    "@media (min-width: 640px)": {
+      borderRadius: "1rem",
+      margin: "1rem 1rem",
+      marginBottom: "4rem",
+    },
+    "@media (min-width: 1024px)": {
+      margin: "1rem 2rem",
+      marginBottom: "5rem",
+    },
   },
   table: {
     width: "100%",
+    minWidth: "100%",
     borderCollapse: "separate",
     borderSpacing: "0",
-    tableLayout: "auto",
+    tableLayout: "fixed",
     backgroundColor: "#ffffff",
-    //border: "0.5px solid rgb(0, 0, 0)",
   },
   thead: {
     backgroundColor: "#f8fafc",
-    
   },
   th: {
-    padding: "1rem 1.5rem",
+    padding: "0.75rem 1rem",
     textAlign: "left",
     fontWeight: "600",
-    fontSize: "1.1rem",
+    fontSize: "0.875rem",
     color: "#374151",
     border: "0.5px solid rgb(0, 0, 0)",
-    //borderBottom: "1px solid rgb(0, 0, 0)",
-    //borderRight: "1px solid rgb(0, 0, 0)",
+    "@media (min-width: 640px)": {
+      padding: "1rem 1.5rem",
+      fontSize: "1.1rem",
+    },
   },
   tr: {
     cursor: "pointer",
     transition: "background 0.2s ease",
     border: "0.5px solid rgb(0, 0, 0)",
-   // borderBottom: "1px solid rgb(0, 0, 0)",
-   // borderRight: "1px solid rgb(0, 0, 0)",
   },
   trHover: {
     backgroundColor: "#f8fafc",
     border: "0.5px solid rgb(0, 0, 0)",
   },
   tdName: {
-    padding: "1rem 1.5rem",
+    padding: "0.75rem 1rem",
     fontWeight: "600",
     whiteSpace: "normal",
     wordWrap: "break-word",
-    lineHeight: "1.5",
+    lineHeight: "1.4",
     color: "#1f2937",
     border: "0.5px solid rgb(0, 0, 0)",
-   // borderRight: "1px solid rgb(0, 0, 0)",
-    //borderBottom: "1px solid rgb(0, 0, 0)",
+    fontSize: "0.875rem",
+    "@media (min-width: 640px)": {
+      padding: "1rem 1.5rem",
+      lineHeight: "1.5",
+      fontSize: "1rem",
+    },
   },
   tdDesc: {
-    padding: "1rem 1.5rem",
+    padding: "0.75rem 1rem",
     whiteSpace: "normal",
     wordWrap: "break-word",
-    lineHeight: "1.5",
+    lineHeight: "1.4",
     color: "#4b5563",
     border: "0.5px solid rgb(0, 0, 0)",
-    borderBottom: "0px solid rgb(0, 0, 0)",
-    borderRight: "1px solid rgb(0, 0, 0)",
+    fontSize: "0.875rem",
+    "@media (min-width: 640px)": {
+      padding: "1rem 1.5rem",
+      lineHeight: "1.5",
+      fontSize: "1rem",
+    },
   },
   volverContainer: {
-    marginTop: "1.5rem",
+    marginTop: "4rem",
     display: "flex",
-    justifyContent: "flex-start",
+    marginBottom: "14rem",
+    justifyContent: "center",
+    width: "100%",
+    maxWidth: "1200px",
+    "@media (min-width: 640px)": {
+      justifyContent: "flex-start",
+      marginTop: "5rem",
+    },
+    "@media (min-width: 1024px)": {
+      marginTop: "6rem",
+    },
   },
 };
 
