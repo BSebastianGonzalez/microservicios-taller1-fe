@@ -20,7 +20,7 @@ const styles = {
     flexDirection: "column",
     width: "100%",
     minHeight: "100vh",
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     boxSizing: "border-box",
     margin: 0,
     padding: 0,
@@ -30,7 +30,7 @@ const styles = {
   main: {
     flex: 1,
     width: "100%",
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent", // Cambia esto
     paddingTop: "100px", // Espacio para el header fijo
     boxSizing: "border-box",
     display: "flex",

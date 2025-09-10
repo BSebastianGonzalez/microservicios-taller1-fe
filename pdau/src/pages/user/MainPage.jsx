@@ -129,6 +129,16 @@ const styles = {
     boxSizing: "border-box",
     position: "relative",
     cursor: 'default',
+    // Usa la ruta desde public (leading slash). Si usas CRA, también funciona:
+    // backgroundImage: `url(${process.env.PUBLIC_URL}/img/fondo.png)`,
+    backgroundImage: "url('/img/fondo.png')",
+    backgroundRepeat: "no-repeat",
+    backgroundSize: "cover",
+    backgroundPosition: "center center",
+    backgroundAttachment: "fixed",
+    // Estilos temporales de depuración. Quitar cuando confirmes.
+    backgroundColor: "#ffffffff",      // color base para ver contraste si la imagen falla
+    backgroundBlendMode: "multiply"  // ayuda a que la imagen salga debajo del contenido claro
   },
   mainContent: {
     display: "flex",
@@ -161,13 +171,25 @@ const styles = {
   },
   description: {
     textAlign: "center",
-    marginBottom: "clamp(2rem, 5vw, 4rem)",
-    //maxWidth: "min(50rem, 90vw)",
-    color: "#00000",
-    lineHeight: "1.6",
-    fontSize: "clamp(1rem, 2.5vw, 1.2rem)",
+    marginTop: "-1rem",
+    marginBottom: "clamp(2rem, 5vw, 3rem)",
+    color: "#fff",
+    lineHeight: "1.7",
+    fontSize: "clamp(1.1rem, 2.5vw, 1.5rem)",
     width: "100%",
-    padding: "0 1rem",
+    maxWidth: "900px",
+    padding: "2rem 2.5rem",
+    fontWeight: "500",
+    borderRadius: "1.5rem",
+    background: "rgba(30, 41, 59, 0.55)", // Fondo oscuro semitransparente
+    boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.15)",
+    backdropFilter: "blur(4px)", // Efecto glassmorphism
+    WebkitBackdropFilter: "blur(4px)",
+    border: "1px solid rgba(255,255,255,0.15)",
+    letterSpacing: "0.5px",
+    marginLeft: "auto",
+    marginRight: "auto",
+    transition: "background 0.3s",
   },
   cardsContainer: {
     display: "flex",
@@ -181,29 +203,35 @@ const styles = {
     margin: "0 auto",   // Centra el contenedor horizontalmente
   },
   card: {
-    flex: "0 0 300px", // Tamaño fijo para alineación perfecta
+    flex: "0 0 300px",
     width: "300px",
-    height: "auto",
-    borderRadius: "1rem",
-    padding: "clamp(1.5rem, 3vw, 2rem)",
+    minHeight: "220px",
+    borderRadius: "1.25rem",
+    padding: "2rem 1.5rem 1.5rem 1.5rem",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    justifyContent: "center",
-    margin: "0.5rem", // Margen uniforme
-    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+    justifyContent: "flex-start",
+    margin: "0.5rem",
+    background: "rgba(255,255,255,0.25)", // Fondo semitransparente
+    boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.15)",
+    border: "1.5px solid rgba(255,255,255,0.35)",
+    backdropFilter: "blur(6px)", // Efecto glassmorphism
+    WebkitBackdropFilter: "blur(6px)",
+    transition: "transform 0.2s, box-shadow 0.2s, border 0.2s",
     cursor: "pointer",
-    backgroundColor: "#ffffff",
-    //boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+    // Efecto hover (agrega esto en el componente con onMouseEnter/onMouseLeave si usas JS puro)
+    // O usa una clase CSS para :hover si prefieres CSS
   },
   cardText: {
-    fontSize: "clamp(0.875rem, 2vw, 1rem)",
-    fontWeight: "bold",
-    color: "#111827",
-    marginTop: "1rem",
+    fontSize: "1rem",
+    fontWeight: "500",
+    color: "#000000ff",
+    marginTop: "1.2rem",
     textAlign: "center",
     lineHeight: "1.5",
     width: "100%",
+    letterSpacing: "0.2px",
   },
 };
 
