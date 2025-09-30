@@ -35,17 +35,19 @@ const styles = {
     zIndex: 50,
     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
     cursor: 'default',
-  },
-  logoContainer: {
+    paddingLeft: '0.5rem', // Agrega un pequeño padding a la izquierda para acercar el logo al borde
+    },
+    logoContainer: {
     display: 'flex',
     alignItems: 'center',
     height: '100%',
     textDecoration: 'none',
     cursor: 'default',
-  },
-  // Para centrar las letras vertical y horizontalmente en el cuadro, usa display: 'flex', alignItems: 'center' y justifyContent: 'center'
-  // Ajustado para mostrar correctamente una imagen en vez de un cuadro de letras
-  logo: {
+    marginLeft: '0rem', // Mueve el logo un poco más a la izquierda
+    },
+    // Para centrar las letras vertical y horizontalmente en el cuadro, usa display: 'flex', alignItems: 'center' y justifyContent: 'center'
+    // Ajustado para mostrar correctamente una imagen en vez de un cuadro de letras
+    logo: {
     objectFit: 'contain',
     height: '3.5rem',
     width: '3.5rem',
@@ -57,8 +59,8 @@ const styles = {
     borderRadius: '0px', // Sin bordes redondeados, completamente rectangular
     transition: 'all 0.3s ease',
     cursor: 'pointer',
-  },
-  titleContainer: {
+    },
+    titleContainer: {
     textDecoration: 'none',
     color: 'white',
     display: 'flex',

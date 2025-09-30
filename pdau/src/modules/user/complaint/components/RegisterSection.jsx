@@ -15,6 +15,7 @@ const RegisterSection = () => {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [loadingModal, setLoadingModal] = useState(false);
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
+  // const [files, setFiles] = useState([]);
 
   // Modales personalizados
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -106,6 +107,11 @@ const RegisterSection = () => {
       setShowErrorModal(true);
     }
   };
+
+  // const handleFilesChange = (files) => {
+  //   setFiles(files);
+  //   console.log("Archivos seleccionados:", files);
+  // };
 
   const handleCancel = () => {
     setShowCancelModal(true);
@@ -253,27 +259,39 @@ const RegisterSection = () => {
       </div>
 
       {/* Campo de Seleccionar Categoría */}
-      <div style={styles.fieldRowSmall}>
-        <div style={styles.fieldLabel}>
-          <img
-            src="img/obligatory.svg"
-            alt="Campo obligatorio"
-            style={styles.obligatoryIcon}
-          />
-          <Tag text="Seleccionar categoría" />
+        <div style={styles.fieldRowSmall}>
+          <div style={styles.fieldLabel}>
+            <img
+          src="img/obligatory.svg"
+          alt="Campo obligatorio"
+          style={styles.obligatoryIcon}
+            />
+            <Tag text="Seleccionar categoría" />
+          </div>
+          {loading ? (
+            <p style={styles.loadingText}>Cargando categorías...</p>
+          ) : (
+            <CategorySelector
+          categories={categories}
+          onSelect={handleCategorySelect}
+            />
+          )}
         </div>
-        {loading ? (
-          <p style={styles.loadingText}>Cargando categorías...</p>
-        ) : (
-          <CategorySelector
-            categories={categories}
-            onSelect={handleCategorySelect}
-          />
-        )}
-      </div>
 
+        {/* Campo de Subir Archivo de Evidencia */}
+        <div style={styles.fieldRowSmall}>
+          <div style={styles.fieldLabel}>
+            <img
+          src="img/obligatory.svg"
+          alt="Campo obligatorio"
+          style={styles.hiddenObligatoryIcon}
+            />
+            <Tag text="Subir archivo de evidencia" />
+          </div>
+          <FileUploader />
+        </div>
 
-      {/* Botones de acción */}
+      {/* Botones de Enviar y Cancelar */}
       <div style={styles.actionButtons}>
         <Button
           text="Enviar denuncia"

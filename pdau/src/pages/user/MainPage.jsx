@@ -171,22 +171,22 @@ const styles = {
   },
   description: {
     textAlign: "center",
-    marginTop: "-1rem",
-    marginBottom: "clamp(2rem, 5vw, 3rem)",
+    marginTop: "-0.5rem",
+    marginBottom: "clamp(1.2rem, 3vw, 2rem)",
     color: "#fff",
-    lineHeight: "1.7",
-    fontSize: "clamp(1.1rem, 2.5vw, 1.5rem)",
+    lineHeight: "1.6",
+    fontSize: "clamp(0.95rem, 2vw, 1.15rem)",
     width: "100%",
-    maxWidth: "900px",
-    padding: "2rem 2.5rem",
+    maxWidth: "700px",
+    padding: "1.2rem 1.5rem",
     fontWeight: "500",
-    borderRadius: "1.5rem",
-    background: "rgba(30, 41, 59, 0.55)", // Fondo oscuro semitransparente
-    boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.15)",
-    backdropFilter: "blur(4px)", // Efecto glassmorphism
-    WebkitBackdropFilter: "blur(4px)",
-    border: "1px solid rgba(255,255,255,0.15)",
-    letterSpacing: "0.5px",
+    borderRadius: "1rem",
+    background: "rgba(30, 41, 59, 0.45)",
+    boxShadow: "0 4px 16px 0 rgba(31, 38, 135, 0.10)",
+    backdropFilter: "blur(3px)",
+    WebkitBackdropFilter: "blur(3px)",
+    border: "1px solid rgba(255,255,255,0.10)",
+    letterSpacing: "0.3px",
     marginLeft: "auto",
     marginRight: "auto",
     transition: "background 0.3s",
@@ -194,44 +194,40 @@ const styles = {
   cardsContainer: {
     display: "flex",
     flexDirection: "row",
-    gap: "clamp(1rem, 3vw, 2rem)",
+    gap: "clamp(0.5rem, 2vw, 1.2rem)", // Menor separación
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    flexWrap: "nowrap", // No envolver para mantener las tres en fila
-    maxWidth: "1200px", // Limita el ancho para centrar el grupo
-    margin: "0 auto",   // Centra el contenedor horizontalmente
+    flexWrap: "nowrap",
+    maxWidth: "900px", // Más compacto
+    margin: "0 auto",
   },
   card: {
-    flex: "0 0 300px",
-    width: "300px",
-    minHeight: "220px",
-    borderRadius: "1.25rem",
-    padding: "2rem 1.5rem 1.5rem 1.5rem",
+    flex: "0 0 180px",
+    width: "180px",
+    minHeight: "140px",
+    borderRadius: "1.5rem",
+    padding: "1.5rem 1.2rem 1.2rem 1.2rem",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "flex-start",
     margin: "0.5rem",
-    background: "rgba(255,255,255,0.25)", // Fondo semitransparente
-    boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.15)",
-    border: "1.5px solid rgba(255,255,255,0.35)",
-    backdropFilter: "blur(6px)", // Efecto glassmorphism
-    WebkitBackdropFilter: "blur(6px)",
-    transition: "transform 0.2s, box-shadow 0.2s, border 0.2s",
+    background: "#fff", // Fondo blanco
+    boxShadow: "0 4px 24px 0 rgba(30,41,59,0.10)",
+    border: "none",
+    transition: "transform 0.18s, box-shadow 0.18s",
     cursor: "pointer",
-    // Efecto hover (agrega esto en el componente con onMouseEnter/onMouseLeave si usas JS puro)
-    // O usa una clase CSS para :hover si prefieres CSS
   },
   cardText: {
-    fontSize: "1rem",
+    fontSize: "0.88rem",
     fontWeight: "500",
     color: "#000000ff",
-    marginTop: "1.2rem",
+    marginTop: "1rem",
     textAlign: "center",
     lineHeight: "1.5",
     width: "100%",
-    letterSpacing: "0.2px",
+    letterSpacing: "0.1px",
   },
 };
 
