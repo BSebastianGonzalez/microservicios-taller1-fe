@@ -133,13 +133,14 @@ const ComplaintService = {
     }
   },
 
+
   uploadFile: async (file, denunciaId) => {
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("denunciaId", denunciaId);
 
-      const response = await axios.post("/evidencia", formData, {
+      const response = await axios.post("/api/evidencia", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -154,7 +155,7 @@ const ComplaintService = {
   // Obtener archivos por denunciaId
   getFilesByComplaintId: async (denunciaId) => {
     try {
-      const response = await axios.get(`/evidencia/${denunciaId}`);
+      const response = await axios.get(`/api/evidencia/${denunciaId}`);
       return response.data;
     } catch (error) {
       console.error(`Error al obtener archivos de la denuncia con ID ${denunciaId}:`, error);

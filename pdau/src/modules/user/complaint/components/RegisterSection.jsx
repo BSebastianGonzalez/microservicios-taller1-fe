@@ -15,7 +15,7 @@ const RegisterSection = () => {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [loadingModal, setLoadingModal] = useState(false);
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
-  // const [files, setFiles] = useState([]);
+  const [files, setFiles] = useState([]);
 
   // Modales personalizados
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -80,6 +80,9 @@ const RegisterSection = () => {
     setSelectedCategories(categories);
   };
 
+  const handleFilesChange = (selectedFiles) => {
+    setFiles(selectedFiles);
+  };
 
   const handleSubmit = async () => {
     if (!title || !description || selectedCategories.length === 0) {
@@ -96,22 +99,26 @@ const RegisterSection = () => {
     };
 
     try {
+      // 1. Crear la denuncia
       const response = await ComplaintService.createComplaint(complaintData);
       const token = response.token;
-      
+      const denunciaId = response.id || response.denunciaId;
+
+      // 2. Subir archivos si hay
+      if (files && files.length > 0 && denunciaId) {
+        for (const file of files) {
+          await ComplaintService.uploadFile(file, denunciaId);
+        }
+      }
+
       setLoadingModal(false);
       navigate("/finished_register", { state: { token } });
     } catch {
       setLoadingModal(false);
-      setErrorMessage("Hubo un error al registrar la denuncia. Inténtelo nuevamente.");
+      setErrorMessage("Hubo un error al registrar la denuncia o subir archivos. Inténtelo nuevamente.");
       setShowErrorModal(true);
     }
   };
-
-  // const handleFilesChange = (files) => {
-  //   setFiles(files);
-  //   console.log("Archivos seleccionados:", files);
-  // };
 
   const handleCancel = () => {
     setShowCancelModal(true);
@@ -288,7 +295,7 @@ const RegisterSection = () => {
             />
             <Tag text="Subir archivo de evidencia" />
           </div>
-          <FileUploader />
+          <FileUploader onFilesChange={handleFilesChange} />
         </div>
 
       {/* Botones de Enviar y Cancelar */}
