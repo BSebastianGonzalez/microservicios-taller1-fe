@@ -11,60 +11,65 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      // Script mejorado para actualizar el título según la ruta actual
-      // Ahora soporta la ruta de consulta, registrar y otras rutas básicas
-      function actualizarTitulo() {
-        const path = window.location.pathname;
-        let titulo = "PDAU";
-        if (path === "/") {
-          titulo = "Inicio | PDAU";
-        } else if (
-          path.startsWith("/consulta") ||
-          path.startsWith("/consult") // Soporta tanto /consulta como /consult
-        ) {
-          // Si la ruta es exactamente /law_frame, mostrar "Consultar Marco Legal"
-          if (path === "/law_frame") {
-            titulo = "Consultar Marco Legal | PDAU";
-          } else {
-            titulo = "Consultar Denuncia | PDAU";
-          }
-        } else if (
-          path.startsWith("/registrar") ||
-          path.startsWith("/register") || // Soporta tanto /registrar como /register
-          path === "/complaint" // También para la ruta /complaint
-        ) {
-          titulo = "Registrar Denuncia | PDAU";
-        } else if (path === "/law_frame") {
-          titulo = "Consultar Marco Legal | PDAU";
-        } else if (path.startsWith("/legal")) {
-          titulo = "Avisos Legales | PDAU";
-        } else if (path.startsWith("/denuncia")) {
-          titulo = "Nueva denuncia | PDAU";
-        }
-        document.title = titulo;
-      }
+      function computeTitle(path) {
+    // Rutas administrativas
+      if (path === "/admin_login") return "Iniciar sesión | PDAU";
+      if (path.startsWith("/admin_main")) return "Inicio | PDAU";
 
-      // Actualiza al cargar
-      actualizarTitulo();
+      if (path === "/data") return "Mis datos | PDAU";
+      if (path === "/data_update") return "Actualizar datos personales | PDAU";
+      if (path === "/personal_documents") return "Documentos personales | PDAU";
 
-      // Escucha cambios de historial
-      window.addEventListener("popstate", actualizarTitulo);
+      if (path === "/read_complaint") return "Denuncias anónimas | PDAU";
+      if (path === "/archived_complaints") return "Denuncias anónimas archivadas | PDAU";
+      if (path.startsWith("/complaint_checkout")) return "Revisar denuncia | PDAU";
+      if (path.startsWith("/archived_complaint")) return "Revisar denuncia archivada | PDAU";
 
-      // Detecta cambios con pushState
-      (function(history){
-        const pushState = history.pushState;
-        history.pushState = function(state) {
-          if (typeof history.onpushstate == "function") {
-            history.onpushstate({state: state});
-          }
-          const ret = pushState.apply(history, arguments);
-          actualizarTitulo();
-          return ret;
-        };
-      })(window.history);
+      if (path.startsWith("/stats")) return "Generar estadísticas | PDAU";
+      if (path.startsWith("/reports/new")) return "Generar reportes | PDAU";
+      if (path.startsWith("/reports")) return "Consultar reportes | PDAU";
 
-      // Opcional: Detecta cambios de hash (por si usas hash routing)
-      window.addEventListener("hashchange", actualizarTitulo);
-    </script>
+      // Rutas públicas que ya tenías
+      if (path === "/") return "Inicio | PDAU";
+      if (path === "/law_frame") return "Consultar Marco Legal | PDAU";
+      if (path.startsWith("/consulta") || path.startsWith("/consult")) return "Consultar Denuncia | PDAU";
+      if (path.startsWith("/registrar") || path.startsWith("/register") || path === "/complaint") return "Registrar Denuncia | PDAU";
+      if (path.startsWith("/legal")) return "Avisos Legales | PDAU";
+      if (path.startsWith("/denuncia")) return "Nueva denuncia | PDAU";
+
+      // Fallback
+      return "PDAU";
+    }
+
+    function actualizarTitulo() {
+      const path = window.location.pathname;
+      document.title = computeTitle(path);
+    }
+
+    // Inicial
+    actualizarTitulo();
+
+    // Navegación con botones del navegador
+    window.addEventListener("popstate", actualizarTitulo);
+    window.addEventListener("hashchange", actualizarTitulo);
+
+    // Intercepta pushState y replaceState para SPA
+    (function (history) {
+      const pushState = history.pushState;
+      const replaceState = history.replaceState;
+
+      history.pushState = function () {
+        const ret = pushState.apply(history, arguments);
+        actualizarTitulo();
+        return ret;
+      };
+
+      history.replaceState = function () {
+        const ret = replaceState.apply(history, arguments);
+        actualizarTitulo();
+        return ret;
+      };
+    })(window.history);
+  </script>
   </body>
 </html>
