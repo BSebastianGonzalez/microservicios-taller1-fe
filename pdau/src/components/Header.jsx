@@ -22,7 +22,7 @@ const Header = () => {
 
 const styles = {
   header: {
-    background: 'linear-gradient(90deg,rgb(34, 49, 82) 0%,rgb(37, 99, 235) 100%)',
+    background: 'linear-gradient(90deg,rgb(34, 49, 82) 0%,hsla(221, 83%, 53%, 1.00) 100%)',
     padding: '0rem 2rem', // Reducido un poco el padding vertical
     display: 'flex',
     alignItems: 'center',

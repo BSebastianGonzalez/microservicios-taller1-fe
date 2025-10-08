@@ -1,9 +1,13 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Button from "../../../components/Button";
+import Modal from "../../../components/Modal";
 
 const DataSection = () => {
-  // Obtener los datos del administrador desde localStorage
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const adminData = JSON.parse(localStorage.getItem("admin")) || {
     nombre: "N/A",
     apellido: "N/A",
@@ -12,68 +16,116 @@ const DataSection = () => {
     direccion: "N/A",
   };
 
-  const navigate = useNavigate();
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [errMsg, setErrMsg] = useState("");
+
+  useEffect(() => {
+    if (location.state?.updated) {
+      setSuccessOpen(true);
+      // limpiar el state para que no se repita al refrescar
+      navigate(".", { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
+
+  const hasEmptyFields = () => {
+    const vals = [
+      adminData.nombre,
+      adminData.apellido,
+      adminData.correo,
+      adminData.telefono,
+      adminData.direccion,
+    ];
+    return vals.some((v) => !v || v === "N/A");
+  };
 
   const handleUpdateClick = () => {
+    if (hasEmptyFields()) {
+      setErrMsg(
+        "Faltan datos por completar. Te recomendamos actualizarlos antes de continuar."
+      );
+      setErrorOpen(true);
+      return;
+    }
     navigate("/data_update", { state: { adminData } });
   };
+
 
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>Datos personales</h1>
-      <div style={styles.form}>
-        <div style={styles.field}>
+
+      <div style={styles.card}>
+        {/* Nombres */}
+        <div style={styles.row}>
           <label style={styles.label}>Nombres</label>
-          <input
-            type="text"
-            value={adminData.nombre}
-            readOnly
-            style={styles.input}
-          />
+          <input style={styles.input} readOnly value={adminData.nombre} />
         </div>
-        <div style={styles.field}>
+
+        {/* Apellidos */}
+        <div style={styles.row}>
           <label style={styles.label}>Apellidos</label>
-          <input
-            type="text"
-            value={adminData.apellido}
-            readOnly
-            style={styles.input}
-          />
+          <input style={styles.input} readOnly value={adminData.apellido} />
         </div>
-        <div style={styles.field}>
+
+        {/* Correo */}
+        <div style={styles.row}>
           <label style={styles.label}>Correo</label>
           <input
+            style={styles.input}
             type="email"
+            readOnly
             value={adminData.correo}
-            readOnly
-            style={styles.input}
           />
         </div>
-        <div style={styles.field}>
-          <label style={styles.label}>Teléfono</label>
-          <input
-            type="text"
-            value={adminData.telefono}
-            readOnly
-            style={styles.input}
-          />
+
+        {/* Teléfono */}
+        <div style={styles.row}>
+          <label style={styles.label}>Telefono</label>
+          <input style={styles.input} readOnly value={adminData.telefono} />
         </div>
-        <div style={styles.field}>
-          <label style={styles.label}>Dirección</label>
-          <input
-            type="text"
-            value={adminData.direccion}
-            readOnly
-            style={styles.input}
-          />
+
+        {/* Dirección */}
+        <div style={styles.row}>
+          <label style={styles.label}>Direccion</label>
+          <input style={styles.input} readOnly value={adminData.direccion} />
         </div>
+
+        {/* Botón */}
         <div style={styles.buttonContainer}>
-          <Button
-            text="Actualizar datos"
-            className="bg-red-600 text-white hover:bg-red-700"
-            onClick={handleUpdateClick}
-          />
+          <Button text="Actualizar información" onClick={handleUpdateClick} />
         </div>
+
+        {/* Modales */}
+        <Modal
+        open={successOpen}
+        type="success"
+        title="¡Datos actualizados!"
+        message="La información personal se guardó correctamente."
+        confirmText="Entendido"
+        onClose={() => setSuccessOpen(false)}
+      />
+      <Modal
+        open={successOpen}
+        type="success"
+        title="¡Datos actualizados!"
+        message="La información personal se guardó correctamente."
+        confirmText="Entendido"
+        onClose={() => setSuccessOpen(false)}
+      />
+      <Modal
+        open={errorOpen}
+        type="error"
+        title="Faltan datos por completar"
+        message={errMsg}
+        confirmText="Ir a actualizar"
+        onConfirm={() =>
+          navigate("/data_update", { state: { adminData } })
+        }
+        onClose={() => setErrorOpen(false)}
+        onCancel={() => setErrorOpen(false)}
+        cancelText="Luego"
+      />
       </div>
     </div>
   );
@@ -81,87 +133,78 @@ const DataSection = () => {
 
 const styles = {
   container: {
-    // Ajusta el ancho restando el sidebar (260px) y centra el contenido
-    width: "100%",
-    minWidth: "100vh",
-    maxWidth: "100vh",
-    boxSizing: "border-box",
+    // Deja espacio para el sidebar fijo (~260px)
+    marginLeft: "260px",
+    width: "calc(100% - 260px)",
+    minHeight: "100vh",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    justifyContent: "center", // Centra verticalmente si el padre lo permite
-    padding: "3rem 3rem",
-    marginLeft: "260px", // Deja espacio para el sidebar fijo
-    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
-    minHeight: "100vh", // Para que el contenido esté centrado verticalmente
-  },
-  title: {
-    fontSize: "2.5rem",
-    fontWeight: 900,
-    marginBottom: "2.5rem",
-    marginTop: "-15rem",
-    color: "#223053",
-    letterSpacing: "0.02em",
-    textShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
-    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
-    lineHeight: "1.1",
-    textAlign: "center",
-    width: "100%",
-  },
-  form: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "1rem 5rem",
-    width: "100%",
-    maxWidth: "900px",
-    background: "rgba(255, 255, 255, 0.99)",
-    borderRadius: "1.5rem",
-    boxShadow: "0 8px 32px 0 rgba(30,58,138,0.13), 0 2px 8px 0 rgba(37,99,235,0.10)",
-    padding: "2rem 3rem",
-    border: "1.5px solid #e0e7ef",
-    transition: "box-shadow 0.25s cubic-bezier(.4,0,.2,1)",
-    alignItems: "start",
     boxSizing: "border-box",
-    margin: "0 auto", // Centra el form horizontalmente
-    justifySelf: "center", // Centra el form si el contenedor es grid
-    alignSelf: "center",   // Centra el form si el contenedor es grid/flex
-    placeSelf: "center",   // Centra el form completamente dentro del grid/flex parent
+    padding: "2.5rem 2rem",
+    background: "transparent",
   },
-  field: {
-    display: "flex",
+
+  title: {
+    fontFamily: "'Inter','Segoe UI', Arial, sans-serif",
+    fontSize: "3rem",
+    fontWeight: 900,
+    color: "#111827",
+    textAlign: "center",
+    //marginLeft: "-13rem",
+    marginBottom: "3rem",
+    lineHeight: 1.1,
+  },
+
+  card: {
+    width: "min(800px, 80%)",
+    background: "#fff",
+    borderRadius: "16px",
+    border: "1px solid #e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
     flexDirection: "column",
-    gap: "0.5rem",
-    marginBottom: "0.2rem",
-    gridColumn: "span 1",
+    //marginLeft: "-13rem",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+    padding: "2rem 0rem 2rem 2rem",
   },
+
+  // Cada fila: etiqueta a la izquierda, input a la derecha
+  row: {
+    display: "grid",
+    gridTemplateColumns: "220px 1fr",
+    alignItems: "center",
+    columnGap: "18px",
+    rowGap: "14px",
+    marginBottom: "14px",
+  },
+
   label: {
-    fontSize: "1.08rem",
+    fontFamily: "'Inter','Segoe UI', Arial, sans-serif",
+    fontSize: "1.05rem",
     fontWeight: 700,
-    color: "#223053",
-    marginBottom: "0.15rem",
-    letterSpacing: "0.015em",
-    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+    color: "#111827",
+    textAlign: "left",
   },
+
   input: {
     width: "100%",
-    padding: "0.85rem 1.5rem",
-    border: "1.5px solid #cbd5e1",
-    borderRadius: "0.9rem",
-    background: "#f6f8fb",
-    fontSize: "1.08rem",
-    color: "#223053",
+    padding: "0.8rem 1rem",
+    marginLeft: "-9rem",
+    fontSize: "1rem",
     fontWeight: 500,
+    color: "#111827",
+    background: "#ffffff",
+    border: "1px solid #cbd5e1",
+    borderRadius: "10px",
     outline: "none",
-    boxShadow: "0 2px 8px 0 rgba(30,58,138,0.04)",
-    transition: "border 0.2s, box-shadow 0.2s",
-    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
   },
+
   buttonContainer: {
-    marginTop: "2rem",
+    marginTop: "1.8rem",
     display: "flex",
     justifyContent: "center",
-    width: "100%",
-    gridColumn: "1 / -1",
   },
 };
 

@@ -1,91 +1,84 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Button from "../../../components/Button";
 import AdminService from "../../../services/AdminService";
+import Modal from "../../../components/Modal";
 
 const DataUpdate = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const adminData = location.state?.adminData ||
+  const adminData =
+    location.state?.adminData ||
     JSON.parse(localStorage.getItem("admin")) || {
       id: 1,
-      nombre: "Juan Diego",
-      apellido: "Castañeda Bohórquez",
-      correo: "juandiegocb@ufps.edu.co",
-      telefono: "3214208500",
-      direccion: "Av 1a Calle 28",
+      nombre: "N/A",
+      apellido: "N/A",
+      correo: "N/A",
+      telefono: "N/A",
+      direccion: "N/A",
     };
 
   const [formData, setFormData] = useState({
-    cedula: adminData.cedula || "",
-    nombre: adminData.nombre,
-    apellido: adminData.apellido,
-    correo: adminData.correo,
-    contrasenia: adminData.contrasenia || adminData.contrasenia,
-    telefono: adminData.telefono,
-    direccion: adminData.direccion,
-    role: adminData.role || "admin",
+    nombre: adminData.nombre || "",
+    apellido: adminData.apellido || "",
+    correo: adminData.correo || "",
+    telefono: adminData.telefono || "",
+    direccion: adminData.direccion || "",
   });
 
-  // Guardar el estado inicial para comparar cambios
   const [initialFormData] = useState(formData);
+
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [errMsg, setErrMsg] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const validate = () => {
+    if (!formData.nombre?.trim()) return "El nombre es obligatorio.";
+    if (!formData.apellido?.trim()) return "El apellido es obligatorio.";
+    if (!formData.telefono?.trim()) return "El teléfono es obligatorio.";
+    if (!formData.direccion?.trim()) return "La dirección es obligatoria.";
+    return null;
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
 
-    if (
-      !formData.nombre ||
-      !formData.apellido ||
-      !formData.telefono ||
-      !formData.direccion
-    ) {
-      alert("Por favor, completa todos los campos antes de actualizar.");
+    const v = validate();
+    if (v) {
+      setErrMsg(v);
+      setErrorOpen(true);
       return;
     }
 
     try {
-      const updatedData = await AdminService.updateAdmin(
-        adminData.id,
-        formData
-      );
+      const updatedData = await AdminService.updateAdmin(adminData.id, formData);
       localStorage.setItem("admin", JSON.stringify(updatedData));
-      alert("Datos actualizados exitosamente.");
-      navigate("/data");
+      setSuccessOpen(true);
     } catch (error) {
-      console.error("Error al actualizar los datos:", error);
-      alert(
-        "Hubo un error al actualizar los datos. Por favor, inténtalo de nuevo."
+      console.error("Error al actualizar:", error);
+      setErrMsg(
+        error?.message ||
+          "Hubo un error al actualizar los datos. Intenta nuevamente."
       );
+      setErrorOpen(true);
     }
   };
 
-  // Función para comparar si hay cambios en el formulario
-  const isFormModified = () => {
-    return (
-      formData.nombre !== initialFormData.nombre ||
-      formData.apellido !== initialFormData.apellido ||
-      formData.telefono !== initialFormData.telefono ||
-      formData.direccion !== initialFormData.direccion
-    );
-  };
+  const isFormModified = () =>
+    formData.nombre !== initialFormData.nombre ||
+    formData.apellido !== initialFormData.apellido ||
+    formData.telefono !== initialFormData.telefono ||
+    formData.direccion !== initialFormData.direccion;
 
-  // Botón para volver a /data con verificación de cambios
   const handleBack = () => {
     if (isFormModified()) {
-      if (
-        window.confirm(
-          "Tienes cambios sin guardar. ¿Seguro que deseas cancelar la actualización de información?"
-        )
-      ) {
+      if (window.confirm("Tienes cambios sin guardar. ¿Deseas salir sin guardar?")) {
         navigate("/data");
       }
     } else {
@@ -93,159 +86,187 @@ const DataUpdate = () => {
     }
   };
 
-  useEffect(() => {
-    // Verificar si el estado del formulario está bien inicializado
-    // console.log(formData);
-  }, [formData]);
+  const goBackToData = () => {
+    setSuccessOpen(false);
+    navigate("/data", { state: { updated: true } });
+  };
 
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>Actualizar datos personales</h1>
-      <form
-        onSubmit={handleSubmit}
-        style={styles.form}
-      >
-        <div style={styles.field}>
+
+      <form onSubmit={handleSubmit} style={styles.card}>
+        {/* Nombres */}
+        <div style={styles.row}>
           <label style={styles.label}>Nombres</label>
           <input
-            type="text"
             name="nombre"
+            type="text"
             value={formData.nombre}
             onChange={handleChange}
             style={styles.input}
           />
         </div>
-        <div style={styles.field}>
+
+        {/* Apellidos */}
+        <div style={styles.row}>
           <label style={styles.label}>Apellidos</label>
           <input
-            type="text"
             name="apellido"
+            type="text"
             value={formData.apellido}
             onChange={handleChange}
             style={styles.input}
           />
         </div>
-        <div style={styles.field}>
-          <label style={styles.label}>Teléfono</label>
+
+        {/* Correo (solo visualización para mantener el mismo espacio) */}
+        <div style={styles.row}>
+          <label style={styles.label}>Correo</label>
           <input
-            type="text"
+            name="correo"
+            type="email"
+            value={formData.correo}
+            disabled
+            style={{ ...styles.input, background: "#f3f4f6", cursor: "not-allowed" }}
+          />
+        </div>
+
+        {/* Teléfono */}
+        <div style={styles.row}>
+          <label style={styles.label}>Telefono</label>
+          <input
             name="telefono"
+            type="text"
             value={formData.telefono}
             onChange={handleChange}
             style={styles.input}
           />
         </div>
-        <div style={styles.field}>
-          <label style={styles.label}>Dirección</label>
+
+        {/* Dirección */}
+        <div style={styles.row}>
+          <label style={styles.label}>Direccion</label>
           <input
-            type="text"
             name="direccion"
+            type="text"
             value={formData.direccion}
             onChange={handleChange}
             style={styles.input}
           />
         </div>
-        <div style={styles.buttonRow}>
-          <Button
-            text="Guardar cambios"
-            className="bg-red-600 text-white hover:bg-red-700"
-            type="submit"
-          />
+
+        {/* Botones */}
+        <div style={styles.buttons}>
+          <Button text="Guardar cambios" onClick={() => handleSubmit()} />
+          <Button text="Volver" onClick={handleBack} />
         </div>
       </form>
-      {/* Botón Volver fuera del form */}
-      <div style={styles.backRow}>
-        <Button
-          text="Volver"
-          className="bg-red-600 text-white hover:bg-gray-400"
-          type="button"
-          onClick={handleBack}
-        />
-      </div>
+
+      {/* Modal Éxito */}
+      <Modal
+        open={successOpen}
+        type="success"
+        title="¡Actualización exitosa!"
+        message="Los datos han sido guardados correctamente."
+        confirmText="Volver a mis datos"
+        onConfirm={goBackToData}
+        onClose={goBackToData}
+      />
+
+      {/* Modal Error */}
+      <Modal
+        open={errorOpen}
+        type="error"
+        title="No se pudo guardar"
+        message={errMsg}
+        confirmText="Entendido"
+        onClose={() => setErrorOpen(false)}
+      />
+
     </div>
   );
 };
 
 const styles = {
+  // MISMO CONTENEDOR BASE QUE DataSection
   container: {
+    marginLeft: "260px",
+    width: "calc(100% - 260px)",
     minHeight: "100vh",
-    maxHeight: "100vh",
-    overflowY: "auto",
-    padding: "0",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    background: "#f3f6fa",
-    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
-    justifyContent: "flex-start",
-  },
-  title: {
-    fontSize: "2rem",
-    fontWeight: 900,
-    marginTop: "2.5rem",
-    marginBottom: "2.5rem",
-    color: "#223053",
-    letterSpacing: "0.02em",
-    textShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-    textAlign: "center",
-    width: "100%",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "1.1rem",
-    width: "100%",
-    maxWidth: "370px",
-    background: "#fff",
-    borderRadius: "1.1rem",
-    boxShadow: "0 8px 32px 0 rgba(30,58,138,0.10), 0 2px 8px 0 rgba(37,99,235,0.08)",
-    padding: "2rem 1.5rem 1.5rem 1.5rem",
-    border: "1.2px solid #e0e7ef",
-    margin: "0 auto",
     boxSizing: "border-box",
-    alignItems: "stretch",
+    padding: "2.5rem 2rem",
+    background: "transparent",
   },
-  field: {
-    display: "flex",
+
+  // Título igual que DataSection (incluye el mismo offset que usas allí)
+  title: {
+    fontFamily: "'Inter','Segoe UI', Arial, sans-serif",
+    fontSize: "3rem",
+    fontWeight: 900,
+    color: "#111827",
+    textAlign: "center",
+    //marginLeft: "-13rem",
+    marginBottom: "3rem",
+    lineHeight: 1.1,
+  },
+
+  // CARD con el mismo ancho/padding/posición que DataSection
+  card: {
+    width: "min(800px, 80%)",
+    background: "#fff",
+    borderRadius: "16px",
+    border: "1px solid #e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
     flexDirection: "column",
-    gap: "0.2rem",
-    marginBottom: "0.1rem",
+    //marginLeft: "-13rem",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+    padding: "2rem 0rem 2rem 2rem",
   },
+
+  // MISMA GRID: etiqueta 220px | campo 1fr
+  row: {
+    display: "grid",
+    gridTemplateColumns: "220px 1fr",
+    alignItems: "center",
+    columnGap: "18px",
+    rowGap: "14px",
+    marginBottom: "14px",
+  },
+
   label: {
-    fontSize: "1rem",
+    fontFamily: "'Inter','Segoe UI', Arial, sans-serif",
+    fontSize: "1.05rem",
     fontWeight: 700,
-    color: "#223053",
-    marginBottom: "0.08rem",
-    letterSpacing: "0.01em",
-    paddingLeft: "0.1rem",
+    color: "#111827",
+    textAlign: "left",
   },
+
+  // Input con el mismo margen izquierdo y estilo que DataSection
   input: {
     width: "100%",
-    padding: "0.7rem 1rem",
-    border: "1.2px solid #cbd5e1",
-    borderRadius: "0.7rem",
-    background: "#f6f8fb",
+    padding: "0.8rem 1rem",
+    marginLeft: "-9rem",
     fontSize: "1rem",
-    color: "#223053",
     fontWeight: 500,
+    color: "#111827",
+    background: "#ffffff",
+    border: "1px solid #cbd5e1",
+    borderRadius: "10px",
     outline: "none",
-    boxShadow: "0 1.5px 6px 0 rgba(30,58,138,0.03)",
-    transition: "border 0.2s, box-shadow 0.2s",
-    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
   },
-  buttonRow: {
+
+  buttons: {
+    marginTop: "1.6rem",
     display: "flex",
     gap: "1rem",
-    marginTop: "1.2rem",
     justifyContent: "center",
-    width: "100%",
-  },
-  backRow: {
-    display: "flex",
-    gap: "1rem",
-    marginTop: "1.2rem",
-    justifyContent: "center",
-    width: "100%",
+    paddingRight: "2rem",
   },
 };
 

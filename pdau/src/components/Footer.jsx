@@ -20,22 +20,6 @@ const Footer = () => {
             El formulario virtual de PDAU es uno de los canales dispuestos para recibir requerimientos de los ciudadanos.
           </p>
         </div>
-
-
-        {/* Columna derecha - Contactenos */}
-        <div style={styles.column}>
-          <h4 style={styles.heading}>Contactenos</h4>
-          <div style={styles.contactInfo}>
-            <div style={styles.contactItem}>
-              <span>📞</span>
-              <span></span>
-            </div>
-            <div style={styles.contactItem}>
-              <span>✉️</span>
-              <span></span>
-            </div>
-          </div>
-        </div>
       </div>
 
       <hr style={styles.divider} />
@@ -43,7 +27,7 @@ const Footer = () => {
       {/* Sección inferior */}
       <div style={styles.bottomSection}>
         <div style={styles.copyright}>
-          <div>2025 © All Rights Reserved. Desarrollado por: </div>
+          <div>2025 © All Rights Reserved. Desarrollado por: Grupo 5 Microservicios </div>
         </div>
       </div>
     </footer>

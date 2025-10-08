@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { RiLockPasswordFill } from "react-icons/ri";
+import { FaUser } from "react-icons/fa";
+import { MdVisibility, MdVisibilityOff } from "react-icons/md";
 import AdminService from "../../../../services/AdminService";
 import Button from "../../../../components/Button";
 import Footer from "../../../../components/Footer";
@@ -9,6 +12,8 @@ const CredentialsSection = () => {
   const [contrasenia, setContrasenia] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
   const navigate = useNavigate();
 
   const handleLogin = async () => {
@@ -48,6 +53,31 @@ const CredentialsSection = () => {
     }
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleFocus = (fieldName) => {
+    setFocusedField(fieldName);
+  };
+
+  const handleBlur = () => {
+    setFocusedField(null);
+  };
+
+  const getInputStyle = (fieldName) => {
+    const baseStyle = { ...styles.input };
+    if (focusedField === fieldName) {
+      baseStyle.border = "2px solid #2563eb";
+      baseStyle.backgroundColor = "#ffffff";
+      baseStyle.boxShadow = "0 0 0 3px rgba(37, 99, 235, 0.1)";
+    }
+    return baseStyle;
+  };
+
+  const showEye =
+    focusedField === "contrasenia" && Boolean(contrasenia.trim());
+
   return (
     <div style={styles.pageContainer}>
       <div style={styles.container}>
@@ -66,8 +96,8 @@ const CredentialsSection = () => {
           <div style={styles.form}>
             <div style={styles.fieldGroup}>
               <label htmlFor="correo" style={styles.label}>
-                <span style={styles.labelIcon}>👤</span>
-                Usuario
+                <FaUser style={styles.labelIcon} />
+                Correo Electronico
               </label>
               <input
                 id="correo"
@@ -75,52 +105,69 @@ const CredentialsSection = () => {
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
                 onKeyPress={handleKeyPress}
-                style={styles.input}
-                placeholder="Ingresa tu nombre de usuario"
+                onFocus={() => handleFocus('correo')}
+                onBlur={handleBlur}
+                style={getInputStyle('correo')}
+                placeholder="Ingresa tu correo electrónico"
                 disabled={isLoading}
               />
             </div>
 
             <div style={styles.fieldGroup}>
               <label htmlFor="contrasenia" style={styles.label}>
-                <span style={styles.labelIcon}>🔒</span>
+                <RiLockPasswordFill style={styles.labelIcon} />
                 Contraseña
               </label>
+              <div style={styles.passwordContainer}>
               <input
                 id="contrasenia"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={contrasenia}
                 onChange={(e) => setContrasenia(e.target.value)}
                 onKeyPress={handleKeyPress}
-                style={styles.input}
+                onFocus={() => handleFocus('contrasenia')}
+                onBlur={handleBlur}
+                style={getInputStyle('contrasenia')}
                 placeholder="Ingresa tu contraseña"
                 disabled={isLoading}
               />
-            </div>
+
+              {showEye && (
+              <button
+                type="button"
+                style={styles.eyeButton}
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={togglePasswordVisibility}
+                disabled={isLoading}
+              >
+                  {showPassword ? (
+                    <MdVisibilityOff style={styles.eyeIcon} />
+                  ) : (
+                    <MdVisibility style={styles.eyeIcon} />
+                  )}
+                </button>
+              )}
+              </div>
 
             {error && (
               <div style={styles.errorContainer}>
-                <span style={styles.errorIcon}>⚠️</span>
+                <FiAlertCircle style={styles.errorIcon} />
                 <p style={styles.errorText}>{error}</p>
               </div>
             )}
+            </div>
 
             {/* Botón de Iniciar Sesión más ancho y con color mejorado */}
-            <button
-              style={styles.loginButton}
-              onClick={handleLogin}
-              disabled={isLoading}
-            >
+            <div style={styles.buttonWrap}>
               {isLoading ? (
-                <div style={styles.loadingContainer}>
-                  <div style={styles.spinner}></div>
+                <button type="button" style={styles.loadingButton} disabled>
+                  <span style={styles.spinnerInline} />
                   <span>Iniciando sesión...</span>
-                </div>
+                </button>
               ) : (
-                "Iniciar Sesión"
+                <Button text="Iniciar Sesión" onClick={handleLogin} />
               )}
-            </button>
-
+            </div>
           </div>
         </div>
       </div>
@@ -218,7 +265,8 @@ const styles = {
     marginBottom: "0.25rem",
   },
   labelIcon: {
-    fontSize: "1rem",
+    fontSize: "1.1rem",
+    color: "#2463ebff",
   },
   input: {
     width: "100%",
@@ -229,6 +277,30 @@ const styles = {
     transition: "all 0.2s ease-in-out",
     outline: "none",
     backgroundColor: "#f9fafb",
+  },
+  passwordContainer: {
+    position: "relative",
+    width: "100%",
+  },
+  eyeButton: {
+    position: "absolute",
+    right: "-25px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    background: "none",
+    padding: 0,
+    border: "none",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    //transition: "all 0.2s ease-in-out",
+  },
+  eyeIcon: {
+    fontSize: "1.2rem",
+    color: "#2463ebff",
+    border: "none",
+    background: "none",
   },
   errorContainer: {
     display: "flex",
@@ -243,6 +315,7 @@ const styles = {
   },
   errorIcon: {
     fontSize: "1.25rem",
+    color: "#dc2626",
   },
   errorText: {
     color: "#dc2626",
@@ -253,7 +326,7 @@ const styles = {
   loginButton: {
     width: "70%", // Reducido el ancho para que sea menos ancho
     padding: "1.1rem",
-    background: "linear-gradient(90deg,rgb(255, 0, 0) 0%,rgb(255, 0, 0) 100%)",
+    background: "linear-gradient(90deg, #2563eb 0%, #3b82f6 100%)",
     color: "#fff",
     border: "none",
     borderRadius: "14px",
@@ -263,7 +336,7 @@ const styles = {
     transition: "all 0.2s ease-in-out",
     marginTop: "1.2rem",
     marginBottom: "1.2rem",
-    boxShadow: "0 2px 8px rgba(225,29,72,0.08)",
+    boxShadow: "0 2px 8px rgba(37, 99, 235, 0.15)",
     letterSpacing: "0.5px",
     alignSelf: "center", // Centra el botón si el contenedor es más ancho
   },
@@ -306,6 +379,40 @@ const styles = {
     minWidth: "0",
     margin: 0,
   },
+  buttonWrap: {
+    marginTop: "24px",
+    display: "flex",
+    justifyContent: "center",
+  },
+
+  loadingButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
+    padding: "0.95rem 1.4rem",
+    border: "none",
+    borderRadius: "12px",
+    fontWeight: 800,
+    fontSize: "1rem",
+    color: "#fff",
+    cursor: "not-allowed",
+    background: "linear-gradient(90deg, #2563eb 0%, #1e40af 100%)",
+    boxShadow: "0 6px 16px rgba(37,99,235,0.18)",
+  },
+
+  spinnerInline: {
+    width: "16px",
+    height: "16px",
+    border: "2px solid rgba(255,255,255,0.7)",
+    borderTopColor: "transparent",
+    borderRadius: "50%",
+    animation: "spin .9s linear infinite",
+  },
+  "@keyframes spin": {
+    to: { transform: "rotate(360deg)" },
+  },
+
 };
 
 export default CredentialsSection;

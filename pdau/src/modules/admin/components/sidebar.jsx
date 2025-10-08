@@ -1,387 +1,475 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  FiHome,
+  FiUser,
+  FiFileText,
+  FiInbox,
+  FiArchive,
+  FiBarChart2,
+  FiPieChart,
+  FiLogOut,
+  FiChevronDown,
+  FiChevronRight,
+} from "react-icons/fi";
 
 const Sidebar = ({ adminData }) => {
-  const [selectedSection, setSelectedSection] = useState("Inicio");
-  const [openDropdown, setOpenDropdown] = useState(null); // null, "datos", "denuncias"
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Referencias para cerrar el dropdown al hacer click fuera
+  // Estado UI
+  const [selectedSection, setSelectedSection] = useState("Inicio");
+  const [openDropdown, setOpenDropdown] = useState(null); // "datos" | "denuncias" | "reportes" | null
+  const [hoverId, setHoverId] = useState(null);
+
+  // Refs para cerrar al click fuera
   const datosRef = useRef(null);
   const denunciasRef = useRef(null);
+  const reportesRef = useRef(null);
 
+  // Sincroniza el seleccionado según la ruta actual
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (
-        datosRef.current &&
-        !datosRef.current.contains(event.target) &&
-        denunciasRef.current &&
-        !denunciasRef.current.contains(event.target)
-      ) {
-        setOpenDropdown(null);
-      }
+    const p = location.pathname;
+    if (p.startsWith("/admin_main")) setSelectedSection("Inicio");
+    else if (p.startsWith("/data")) setSelectedSection("Ver mis datos");
+    else if (p.startsWith("/personal_documents"))
+      setSelectedSection("Documentos personales");
+    else if (p.startsWith("/read_complaint"))
+      setSelectedSection("Ver denuncias anónimas");
+    else if (p.startsWith("/archived_complaints"))
+      setSelectedSection("Denuncias archivadas");
+    else if (p.startsWith("/stats")) setSelectedSection("Generar estadísticas");
+    else if (p.startsWith("/reports/new"))
+      setSelectedSection("Generar reportes");
+    else if (p.startsWith("/reports")) setSelectedSection("Consultar reportes");
+  }, [location.pathname]);
+
+  // Cerrar dropdowns al click fuera
+  useEffect(() => {
+    function handleClickOutside(e) {
+      const outside =
+        (!datosRef.current || !datosRef.current.contains(e.target)) &&
+        (!denunciasRef.current || !denunciasRef.current.contains(e.target)) &&
+        (!reportesRef.current || !reportesRef.current.contains(e.target));
+      if (outside) setOpenDropdown(null);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSectionClick = (section) => {
-    setSelectedSection(section);
-    setOpenDropdown(null);
-    if (section === "Inicio") {
-      navigate("/admin_main", { state: { adminData } });
-    }
-  };
+  // Helpers
+  const isHover = (id) => hoverId === id;
 
-  const handleLogout = () => {
-    setOpenDropdown(null);
-    navigate("/admin_login");
-  };
+  const getMenuItemStyle = (id, active) => ({
+    ...styles.menuItem,
+    ...(active ? styles.menuItemActive : {}),
+    ...(isHover(id) ? styles.menuItemHover : {}),
+  });
 
-  const handleDropdownToggle = (dropdown) => {
-    setOpenDropdown((prev) => (prev === dropdown ? null : dropdown));
-  };
+  const getDropdownItemStyle = (id, active, disabled) => ({
+    ...styles.dropdownItem,
+    ...(active ? styles.dropdownItemActive : {}),
+    ...(disabled ? styles.dropdownItemDisabled : {}),
+    ...(isHover(id) ? styles.dropdownItemHover : {}),
+  });
 
-  const handleNavigateToData = () => {
-    setSelectedSection("Ver mis datos");
+  // Navegación
+  const go = (path, label) => {
+    setSelectedSection(label);
     setOpenDropdown(null);
-    navigate("/data", { state: { adminData } });
-  };
-
-  const handleNavigateToComplaint = () => {
-    setSelectedSection("Ver denuncias anónimas");
-    setOpenDropdown(null);
-    navigate("/read_complaint", { state: { adminData } });
-  };
-
-  const handleNavigateToArchived = () => {
-    setSelectedSection("Denuncias archivadas");
-    setOpenDropdown(null);
-    navigate("/archived_complaints", { state: { adminData } });
+    navigate(path, { state: { adminData } });
   };
 
   return (
-    <div style={styles.sidebar}>
-      {/* Parte superior */}
+    <aside style={styles.sidebar}>
+      {/* Top */}
       <div style={styles.topSection}>
         {/* Logo */}
         <div style={styles.logoContainer}>
-          <img src="/img/logo.png" alt="Logo UFPS" style={styles.logo} />
+          <img src="/img/logo.png" alt="PDAU" style={styles.logo} />
         </div>
 
-        {/* Sección de Inicio */}
+        {/* Inicio */}
         <div
-          style={{
-            ...styles.menuItem,
-            ...(selectedSection === "Inicio" ? styles.menuItemActive : {}),
-          }}
-          onClick={() => handleSectionClick("Inicio")}
+          style={getMenuItemStyle("inicio", selectedSection === "Inicio")}
+          onMouseEnter={() => setHoverId("inicio")}
+          onMouseLeave={() => setHoverId(null)}
+          onClick={() => go("/admin_main", "Inicio")}
         >
-          <img src="img/home-alt.svg" alt="Inicio" style={styles.icon} />
+          <FiHome style={styles.icon} />
           <span style={styles.menuText}>Inicio</span>
         </div>
 
-        {/* Sección Mis datos */}
+        {/* Mis datos */}
         <div style={styles.menuGroup} ref={datosRef}>
           <div
-            style={{
-              ...styles.menuItem,
-              ...(openDropdown === "datos" ? styles.menuItemActive : {}),
-            }}
-            onClick={() => handleDropdownToggle("datos")}
+            style={getMenuItemStyle(
+              "datos",
+              openDropdown === "datos" ||
+                selectedSection === "Ver mis datos" ||
+                selectedSection === "Documentos personales"
+            )}
+            onMouseEnter={() => setHoverId("datos")}
+            onMouseLeave={() => setHoverId(null)}
+            onClick={() =>
+              setOpenDropdown(openDropdown === "datos" ? null : "datos")
+            }
           >
-            <img
-              src="img/personal_data.svg"
-              alt="Mis datos"
-              style={styles.icon}
-            />
+            <FiUser style={styles.icon} />
             <span style={styles.menuText}>Mis datos</span>
-            <span
+            <FiChevronDown
               style={{
                 ...styles.dropdownArrow,
-                transform: openDropdown === "datos" ? "rotate(180deg)" : "rotate(0deg)",
+                transform:
+                  openDropdown === "datos" ? "rotate(180deg)" : "rotate(0deg)",
               }}
-            >
-              ▼
-            </span>
+            />
           </div>
+
+          {/* Panel dropdown */}
           <div
             style={{
-              ...styles.dropdownContent,
-              maxHeight: openDropdown === "datos" ? "160px" : "0",
+              ...styles.dropdownPanel,
+              ...(openDropdown === "datos" ? styles.dropdownPanelOpen : {}),
             }}
           >
             <div
-              style={{
-                ...styles.dropdownItem,
-                ...(selectedSection === "Ver mis datos" ? styles.dropdownItemActive : {}),
-              }}
-              onClick={handleNavigateToData}
+              style={getDropdownItemStyle(
+                "ver-datos",
+                selectedSection === "Ver mis datos",
+                false
+              )}
+              onMouseEnter={() => setHoverId("ver-datos")}
+              onMouseLeave={() => setHoverId(null)}
+              onClick={() => go("/data", "Ver mis datos")}
             >
+              <FiChevronRight style={styles.chevIcon} />
               <span style={styles.dropdownText}>Ver mis datos</span>
+            </div>
+
+            <div
+              style={getDropdownItemStyle(
+                "docs",
+                selectedSection === "Documentos personales",
+                false
+              )}
+              onMouseEnter={() => setHoverId("docs")}
+              onMouseLeave={() => setHoverId(null)}
+              onClick={() => go("/personal_documents", "Documentos personales")}
+            >
+              <FiChevronRight style={styles.chevIcon} />
+              <span style={styles.dropdownText}>Documentos personales</span>
             </div>
           </div>
         </div>
 
-        {/* Sección Denuncias anónimas */}
+        {/* Denuncias anónimas */}
         <div style={styles.menuGroup} ref={denunciasRef}>
           <div
-            style={{
-              ...styles.menuItem,
-              ...(openDropdown === "denuncias" ? styles.menuItemActive : {}),
-            }}
-            onClick={() => handleDropdownToggle("denuncias")}
+            style={getMenuItemStyle(
+              "denuncias",
+              openDropdown === "denuncias" ||
+                selectedSection === "Ver denuncias anónimas" ||
+                selectedSection === "Denuncias archivadas"
+            )}
+            onMouseEnter={() => setHoverId("denuncias")}
+            onMouseLeave={() => setHoverId(null)}
+            onClick={() =>
+              setOpenDropdown(openDropdown === "denuncias" ? null : "denuncias")
+            }
           >
-            <img
-              src="img/complaint.svg"
-              alt="Denuncias anónimas"
-              style={styles.icon}
-            />
+            <FiInbox style={styles.icon} />
             <span style={styles.menuText}>Denuncias anónimas</span>
-            <span
+            <FiChevronDown
               style={{
                 ...styles.dropdownArrow,
-                transform: openDropdown === "denuncias" ? "rotate(180deg)" : "rotate(0deg)",
+                transform:
+                  openDropdown === "denuncias"
+                    ? "rotate(180deg)"
+                    : "rotate(0deg)",
               }}
-            >
-              ▼
-            </span>
+            />
           </div>
+
           <div
             style={{
-              ...styles.dropdownContent,
-              maxHeight: openDropdown === "denuncias" ? "160px" : "0",
+              ...styles.dropdownPanel,
+              ...(openDropdown === "denuncias" ? styles.dropdownPanelOpen : {}),
             }}
           >
             <div
-              style={{
-                ...styles.dropdownItem,
-                ...(selectedSection === "Ver denuncias anónimas" ? styles.dropdownItemActive : {}),
-              }}
-              onClick={handleNavigateToComplaint}
+              style={getDropdownItemStyle(
+                "ver-denuncias",
+                selectedSection === "Ver denuncias anónimas",
+                false
+              )}
+              onMouseEnter={() => setHoverId("ver-denuncias")}
+              onMouseLeave={() => setHoverId(null)}
+              onClick={() =>
+                go("/read_complaint", "Ver denuncias anónimas")
+              }
             >
+              <FiChevronRight style={styles.chevIcon} />
               <span style={styles.dropdownText}>Ver denuncias anónimas</span>
             </div>
+
             <div
-              style={{
-                ...styles.dropdownItem,
-                ...(selectedSection === "Denuncias archivadas" ? styles.dropdownItemActive : {}),
-              }}
-              onClick={handleNavigateToArchived}
+              style={getDropdownItemStyle(
+                "archivadas",
+                selectedSection === "Denuncias archivadas",
+                false
+              )}
+              onMouseEnter={() => setHoverId("archivadas")}
+              onMouseLeave={() => setHoverId(null)}
+              onClick={() =>
+                go("/archived_complaints", "Denuncias archivadas")
+              }
             >
+              <FiChevronRight style={styles.chevIcon} />
               <span style={styles.dropdownText}>Denuncias archivadas</span>
             </div>
           </div>
         </div>
+
+        {/* Generar estadísticas */}
+        <div
+          style={getMenuItemStyle(
+            "stats",
+            selectedSection === "Generar estadísticas"
+          )}
+          onMouseEnter={() => setHoverId("stats")}
+          onMouseLeave={() => setHoverId(null)}
+          onClick={() => go("/stats", "Generar estadísticas")}
+        >
+          <FiBarChart2 style={styles.icon} />
+          <span style={styles.menuText}>Generar estadísticas</span>
+        </div>
+
+        {/* Reportes */}
+        <div style={styles.menuGroup} ref={reportesRef}>
+          <div
+            style={getMenuItemStyle(
+              "reportes",
+              openDropdown === "reportes" ||
+                selectedSection === "Generar reportes" ||
+                selectedSection === "Consultar reportes"
+            )}
+            onMouseEnter={() => setHoverId("reportes")}
+            onMouseLeave={() => setHoverId(null)}
+            onClick={() =>
+              setOpenDropdown(openDropdown === "reportes" ? null : "reportes")
+            }
+          >
+            <FiPieChart style={styles.icon} />
+            <span style={styles.menuText}>Reportes</span>
+            <FiChevronDown
+              style={{
+                ...styles.dropdownArrow,
+                transform:
+                  openDropdown === "reportes"
+                    ? "rotate(180deg)"
+                    : "rotate(0deg)",
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              ...styles.dropdownPanel,
+              ...(openDropdown === "reportes" ? styles.dropdownPanelOpen : {}),
+            }}
+          >
+            {/* Deshabilitado (como en tu mockup) */}
+            <div
+              style={getDropdownItemStyle(
+                "gen-report",
+                selectedSection === "Generar reportes",
+                true
+              )}
+              onMouseEnter={() => setHoverId("gen-report")}
+              onMouseLeave={() => setHoverId(null)}
+              onClick={(e) => e.stopPropagation()}
+              aria-disabled="true"
+              title="Disponible próximamente"
+            >
+              <FiChevronRight style={styles.chevIconMuted} />
+              <span style={styles.dropdownTextMuted}>Generar reportes</span>
+            </div>
+
+            <div
+              style={getDropdownItemStyle(
+                "ver-report",
+                selectedSection === "Consultar reportes",
+                false
+              )}
+              onMouseEnter={() => setHoverId("ver-report")}
+              onMouseLeave={() => setHoverId(null)}
+              onClick={() => go("/reports", "Consultar reportes")}
+            >
+              <FiChevronRight style={styles.chevIcon} />
+              <span style={styles.dropdownText}>Consultar reportes</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Parte inferior */}
+      {/* Footer: Cerrar sesión */}
       <div
-        style={styles.logoutItem}
-        onClick={handleLogout}
+        style={getMenuItemStyle("logout", false)}
+        onMouseEnter={() => setHoverId("logout")}
+        onMouseLeave={() => setHoverId(null)}
+        onClick={() => navigate("/admin_login")}
       >
-        <img
-          src="img/cerrar-sesion.png"
-          alt="Cerrar sesión"
-          style={styles.icon}
-        />
+        <FiLogOut style={styles.icon} />
         <span style={styles.menuText}>Cerrar sesión</span>
       </div>
-    </div>
+    </aside>
   );
 };
 
+/* ==== ESTILOS ==== */
 const styles = {
   sidebar: {
-    height: "100%",
-    width: "260px",
-    background: "linear-gradient(120deg, rgb(34, 49, 82) 0%, rgb(37, 99, 235) 100%)",
-    color: "white",
+    width: 260,
+    height: "100vh",
+    position: "fixed",
+    top: 0,
+    left: 0,
+    background:
+      "linear-gradient(180deg, rgba(20,64,170,1) 0%, rgba(37,99,235,1) 45%, rgba(32,78,205,1) 100%)",
+    color: "#fff",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "flex-start",
-    padding: "0",
-    boxShadow: "2px 0 8px rgba(0, 0, 0, 0.15)",
-    position: "relative",
+    boxShadow: "2px 0 10px rgba(0,0,0,.12)",
     zIndex: 100,
-    overflow: "hidden",
   },
+
   topSection: {
     display: "flex",
     flexDirection: "column",
-    alignItems: "flex-start",
-    width: "100%",
-    marginTop: "1rem",
+    gap: 6,
+    paddingTop: 8,
+    paddingBottom: 72, // espacio para el footer
     flex: 1,
-    gap: "0rem",
-    paddingTop: "1rem",
   },
+
   logoContainer: {
-    marginBottom: "2.5rem",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    padding: "18px 0 10px",
     width: "100%",
-    height: "80px",
-    background: "transparent",
-    padding: 0,
+    display: "grid",
+    marginBottom: 20,
+    placeItems: "center",
   },
   logo: {
-    width: "5rem",
-    height: "5rem",
-    marginTop: "1.5rem",
+    width: 76,
+    height: 76,
     objectFit: "contain",
-    display: "block",
-    filter: "none",
-    border: "none",
-    boxShadow: "none",
-    borderRadius: "0",
   },
-  menuGroup: {
-    width: "100%",
-    marginBottom: "0.5rem",
-  },
+
+  /* Item principal */
   menuItem: {
-    width: "100%",
-    padding: "0.9rem 1.2rem 0.9rem 1.2rem",
     display: "flex",
     alignItems: "center",
-    gap: "1.1rem",
+    gap: 12,
+    padding: "12px 18px",
     cursor: "pointer",
-    transition: "none",
-    position: "relative",
-    borderRadius: "0.7rem",
-    margin: "0",
-    background: "transparent",
-    minHeight: "48px",
-    fontSize: "1.13rem",
-    fontWeight: 600,
+    userSelect: "none",
+    transition: "background .22s ease, transform .18s ease, box-shadow .22s ease",
+    borderRadius: 12,
+    marginInline: 10,
   },
   menuItemActive: {
-    // El estilo activo solo se aplica al hacer hover, no de forma permanente
-    // Por defecto, no se aplica ningún estilo especial
+    background: "rgba(255,255,255,.06)",
+    boxShadow: "inset 0 0 0 1px rgba(255,255,255,.08)",
   },
   menuItemHover: {
-    color: "#fff",
-    fontWeight: "bold",
-    background: "linear-gradient(90deg, #223053 0%, #3b486b 100%)",
-    transition: "background 0.25s cubic-bezier(.4,0,.2,1), color 0.25s cubic-bezier(.4,0,.2,1)",
-    boxShadow: "0 2px 8px 0 rgba(30,58,138,0.08)",
+    background:
+      "linear-gradient(90deg, rgba(255,255,255,.12), rgba(255,255,255,.06))",
+    transform: "translateY(-1px)",
   },
+
   icon: {
-    width: "28px",
-    height: "28px",
-    filter: "brightness(0) invert(1)",
+    fontSize: 22,
     flexShrink: 0,
-    marginRight: "0.7rem",
-    marginLeft: "0.1rem",
-    transition: "filter 0.2s, transform 0.2s",
-    display: "inline-block",
+    color: "rgba(255,255,255,.98)",
   },
   menuText: {
-    fontSize: "1.13rem",
-    fontWeight: "bold",
+    fontWeight: 700,
+    fontSize: 15.5,
+    letterSpacing: ".5px",
+    lineHeight: 1,
     flex: 1,
-    whiteSpace: "normal",
-    letterSpacing: "0.01em",
-    textAlign: "left",
-    lineHeight: "1.2",
-    display: "block",
   },
   dropdownArrow: {
-    width: "22px",
-    height: "22px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: "0.5rem",
-    marginTop: "0rem",
-    transition: "transform 0.3s",
-    flexShrink: 0,
-    // El color del icono debe ser blanco para que combine con el fondo
-    color: "#fff",
-    fontWeight: "bold",
-    // Para SVG embebido, quitar fontSize
+    fontSize: 16,
+    opacity: 0.95,
+    transition: "transform .25s ease",
   },
-  dropdownArrowIcon: {
-    width: "22px",
-    height: "22px",
-    display: "block",
-    fill: "#fff",
-    transition: "transform 0.3s",
+
+  /* Grupo y panel del dropdown */
+  menuGroup: {
+    width: "100%",
   },
-  dropdownContent: {
-    paddingLeft: "3.2rem",
+  dropdownPanel: {
+    maxHeight: 0,
     overflow: "hidden",
-    transition: "max-height 0.3s",
-    backgroundColor: "transparent",
-    margin: "0",
-    borderRadius: "0.5rem",
-    width: "100%",
-    marginLeft: "0",
-    marginRight: "0",
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.1rem",
+    marginInline: 16,
+    marginTop: 6,
+    borderRadius: 10,
+    padding: "0 8px",
+    background: "rgba(255,255,255,.18)",
+    backdropFilter: "blur(2px)",
+    transition:
+      "max-height .28s ease, padding .28s ease, background .28s ease",
   },
+  dropdownPanelOpen: {
+    maxHeight: 400,
+    padding: "8px 8px",
+  },
+
+  /* Sub-items */
   dropdownItem: {
-    width: "100%",
-    padding: "0.35rem 0.5rem 0.35rem 0.5rem",
     display: "flex",
     alignItems: "center",
-    gap: "0.75rem",
+    gap: 10,
+    padding: "8px 10px",
+    borderRadius: 8,
     cursor: "pointer",
-    transition: "background 0.2s, color 0.2s",
-    borderRadius: "0.375rem",
-    margin: "0.05rem 0",
-    background: "transparent",
-    fontWeight: 400,
+    userSelect: "none",
+    transition: "background .2s ease, transform .15s ease",
+  },
+  dropdownItemHover: {
+    background: "rgba(255,255,255,.22)",
+    transform: "translateY(-1px)",
   },
   dropdownItemActive: {
-    backgroundColor: "rgba(255, 255, 255, 0.13)",
-    color: "#fff",
-    fontWeight: "bold",
+    background: "rgba(255,255,255,.30)",
+    boxShadow: "inset 0 0 0 1px rgba(255,255,255,.35)",
   },
+  dropdownItemDisabled: {
+    opacity: 0.55,
+    cursor: "not-allowed",
+  },
+
   dropdownText: {
-    fontSize: "1.01rem",
-    fontWeight: "400",
-    color: "rgba(255, 255, 255, 0.92)",
-    letterSpacing: "0.01em",
-    marginLeft: "0.1rem",
-    lineHeight: "1.2",
+    color: "rgba(255,255,255,.95)",
+    fontSize: 14.5,
+    fontWeight: 600,
   },
-  logoutItem: {
-    width: "100%",
-    padding: "1.1rem 2.2rem",
-    display: "flex",
-    alignItems: "center",
-    gap: "1.1rem",
-    cursor: "pointer",
-    borderRadius: "1rem",
-    border: "none",
-    minHeight: "56px",
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: "0rem",
-    zIndex: 2,
-    margin: 0,
-    marginBottom: 0,
-    transition: "background 0.25s cubic-bezier(.4,0,.2,1), box-shadow 0.25s cubic-bezier(.4,0,.2,1), transform 0.18s cubic-bezier(.4,0,.2,1)",
-    fontWeight: 700,
-    color: "#fff",
-    fontSize: "1.18rem",
-    letterSpacing: "0.01em",
-    boxSizing: "border-box",
-    overflow: "hidden",
-    outline: "none",
-    userSelect: "none",
-    background: "transparent",
+  dropdownTextMuted: {
+    color: "rgba(255,255,255,.75)",
+    fontSize: 14.5,
+    fontWeight: 600,
   },
-  logoutItemHover: {
-    background: "linear-gradient(90deg,rgb(255, 255, 255) 0%,rgb(255, 255, 255) 100%)",
-    boxShadow: "0 8px 24px 0 rgba(30,58,138,0.13), 0 2px 8px 0 rgba(37,99,235,0.10)",
-    transform: "translateY(-2px) scale(1.015)",
+  chevIcon: {
+    fontSize: 14,
+    marginTop: -1,
+    color: "rgba(255,255,255,.98)",
+  },
+  chevIconMuted: {
+    fontSize: 14,
+    marginTop: -1,
+    color: "rgba(255,255,255,.7)",
   },
 };
 
