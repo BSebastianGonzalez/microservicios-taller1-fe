@@ -126,9 +126,6 @@ const ArchivedSection = () => {
     <div style={styles.page}>
       <style>{`@keyframes modalIn { from { opacity:.4; transform: translateY(6px) } to { opacity:1; transform: translateY(0) } }`}</style>
 
-      {/* Título */}
-      <h1 style={styles.title}>Denuncias anónimas archivadas</h1>
-
       {/* Botón filtros anclado a la derecha (sticky) */}
       <div style={styles.rightDock}>
         <button
@@ -346,11 +343,9 @@ const ArchivedSection = () => {
 const styles = {
   // Área de contenido: ocupa todo el ancho restante (deja sidebar 260px)
   page: {
-    marginLeft: "260px",
-    width: "calc(100% - 260px)",
-    minHeight: "100vh",
+    width: "100%",
     boxSizing: "border-box",
-    padding: "2.2rem 1.5rem 3rem",
+    padding: "1rem 1rem 1rem",
     display: "flex",
     flexDirection: "column",
     background: "#fff",

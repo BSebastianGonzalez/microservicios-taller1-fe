@@ -101,6 +101,7 @@ const Sidebar = ({ adminData }) => {
         </div>
 
         {/* Mis datos */}
+        {/*
         <div style={styles.menuGroup} ref={datosRef}>
           <div
             style={getMenuItemStyle(
@@ -125,8 +126,10 @@ const Sidebar = ({ adminData }) => {
               }}
             />
           </div>
+          */}
 
           {/* Panel dropdown */}
+          {/*}
           <div
             style={{
               ...styles.dropdownPanel,
@@ -324,6 +327,7 @@ const Sidebar = ({ adminData }) => {
         <span style={styles.menuText}>Cerrar sesión</span>
       </div>
     </aside>
+
   );
 };
 
@@ -336,7 +340,7 @@ const styles = {
     top: 0,
     left: 0,
     background:
-      "linear-gradient(180deg, rgba(20,64,170,1) 0%, rgba(37,99,235,1) 45%, rgba(32,78,205,1) 100%)",
+      "linear-gradient(180deg, rgba(20,64,170,1) 0%, #2463ebff 45%, rgba(32,78,205,1) 100%)",
     color: "#fff",
     display: "flex",
     flexDirection: "column",

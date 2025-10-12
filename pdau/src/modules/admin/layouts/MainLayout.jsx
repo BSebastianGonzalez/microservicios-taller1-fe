@@ -1,5 +1,6 @@
-import Sidebar from "../components/sidebar";
 import { useLocation } from "react-router-dom";
+import Sidebar from "../components/sidebar";
+import Header from "../components/Header";
 
 const MainLayout = ({ children }) => {
   const location = useLocation();
@@ -7,10 +8,23 @@ const MainLayout = ({ children }) => {
   
   return (
     <div style={styles.container}>
-      {/* Barra lateral */}
+      {/* Sidebar fijo */}
+      <div style={styles.sidebarWrapper}>
         <Sidebar adminData={adminData} />
+      </div>
+      
       {/* Contenido principal */}
-        {children}
+      <div style={styles.mainWrapper}>
+        {/* Header que empieza después del sidebar */}
+        <div style={styles.headerWrapper}>
+          <Header />
+        </div>
+        
+        {/* Contenido de la página */}
+        <main style={styles.mainContent}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 };
@@ -18,18 +32,43 @@ const MainLayout = ({ children }) => {
 const styles = {
   container: {
     display: "flex",
-    height: "100vh",
-    width: "100vw",
-    backgroundColor: "#ffffffff",
+    minHeight: "100vh",
+    width: "100%",
+    backgroundColor: "#ffffff",
     overflow: "hidden",
   },
+  
+  sidebarWrapper: {
+    width: "260px",
+    flexShrink: 0,
+    position: "fixed",
+    left: 0,
+    top: 0,
+    height: "100vh",
+    zIndex: 1000,
+  },
+  
+  mainWrapper: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    marginLeft: "260px",
+    minHeight: "100vh",
+  },
+  
+  headerWrapper: {
+    flexShrink: 0,
+    position: "sticky",
+    top: 0,
+    zIndex: 900,
+  },
+  
   mainContent: {
     flex: 1,
-    height: "100%",
-    backgroundColor: "#f8fafc",
     overflow: "auto",
+    minHeight: "calc(100vh - 70px)", // Altura total menos header
+    width: "100%",
     position: "relative",
-    backgroundImage: "linear-gradient(135deg, #f8fafc 0%, #ffffffff 100%)",
   },
 };
 

@@ -9,7 +9,7 @@ import ConsultResponse from './pages/complaint/ConsultResponse';
 import ViewComplaints from './pages/complaint/ViewComplaints';
 import ViewArchivedComplaints from './pages/complaint/ViewArchivedComplaints';
 import LoginPage from './pages/admin/LoginPage';
-import AdminPage from './modules/admin/layouts/MainLayout';
+import AdminPage from './pages/admin/AdminPage';
 import DataPage from './pages/admin/DataPage';
 import LawFrame from './pages/user/LawFrame';
 import ViewLaw from './pages/user/ViewLaw';
