@@ -90,18 +90,6 @@ const WelcomeSection = () => {
             ))}
           </div>
         </div>
-
-        {/* Quick Actions */}
-        <div style={styles.quickActions}>
-          <button style={styles.primaryButton}>
-            <FiTrendingUp size={18} />
-            Ver Dashboard Completo
-          </button>
-          <button style={styles.secondaryButton}>
-            <FiFileText size={18} />
-            Generar Reporte
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -231,7 +219,7 @@ const styles = {
 
   descriptionText: {
     fontSize: "1.1rem",
-    color: "#64748b",
+    color: "#000000",
     lineHeight: "1.7",
     margin: "0",
     textAlign: "center",
@@ -274,14 +262,14 @@ const styles = {
   statNumber: {
     fontSize: "2rem",
     fontWeight: "800",
-    color: "#1e293b",
+    color: "#000000",
     lineHeight: "1",
     marginBottom: "0.25rem",
   },
 
   statLabel: {
     fontSize: "0.9rem",
-    color: "#64748b",
+    color: "#000000",
     fontWeight: "600",
   },
 
@@ -292,7 +280,7 @@ const styles = {
   featuresTitle: {
     fontSize: "1.5rem",
     fontWeight: "700",
-    color: "#1e293b",
+    color: "#000000",
     margin: "0 0 1.5rem 0",
     textAlign: "center",
   },
@@ -333,13 +321,13 @@ const styles = {
   featureTitle: {
     fontSize: "1.1rem",
     fontWeight: "600",
-    color: "#1e293b",
+    color: "#000000",
     margin: "0 0 0.25rem 0",
   },
 
   featureDescription: {
     fontSize: "0.875rem",
-    color: "#64748b",
+    color: "#000000",
     margin: "0",
     lineHeight: "1.4",
   },
@@ -369,21 +357,6 @@ const styles = {
     cursor: "pointer",
     transition: "all 0.3s ease",
     boxShadow: "0 4px 15px rgba(79, 70, 229, 0.3)",
-  },
-
-  secondaryButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.5rem",
-    padding: "1rem 2rem",
-    background: "white",
-    border: "2px solid #e2e8f0",
-    borderRadius: "12px",
-    color: "#4f46e5",
-    fontWeight: "600",
-    fontSize: "1rem",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
   },
 };
 
