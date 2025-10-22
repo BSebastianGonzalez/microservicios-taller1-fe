@@ -3,16 +3,47 @@ import { FiBell } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
 import NotificationMenu from './NotificationMenu';
 import ProfileMenu from './ProfileMenu';
+import AdminService from '../../../services/AdminService';
 
 const Header = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [pageTitle, setPageTitle] = useState('Dashboard');
+  const [adminProfile, setAdminProfile] = useState({ name: 'Cargando...', role: 'Administrador' });
+  
   const menuRef = useRef(null);
   const notifRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const loadAdminData = () => {
+      try {
+        const adminData = AdminService.getCurrentAdmin();
+        if (adminData && adminData.admin) {
+          // Si tu API devuelve los datos dentro de un objeto "admin"
+          const { nombre, apellido, rol } = adminData.admin;
+          setAdminProfile({
+            name: `${nombre || ''} ${apellido || ''}`.trim() || 'Administrador',
+            role: rol || 'Administrador'
+          });
+        } else if (adminData) {
+          // Si los datos están en el nivel principal
+          const { nombre, apellido, rol } = adminData;
+          setAdminProfile({
+            name: `${nombre || ''} ${apellido || ''}`.trim() || 'Administrador',
+            role: rol || 'Administrador'
+          });
+        }
+      } catch (error) {
+        console.error('Error cargando datos del admin:', error);
+        setAdminProfile({ name: 'Administrador', role: 'Usuario' });
+      }
+    };
+
+    loadAdminData();
+  }, []);
 
   // Detectar la página actual y establecer el título
   useEffect(() => {
@@ -27,7 +58,6 @@ const Header = () => {
       '/stats': 'Estadísticas',
       '/reports': 'Reportes',
       '/password_change': 'Cambiar Contraseña'
-
     };
     
     setPageTitle(titles[path] || 'Dashboard');
@@ -71,7 +101,10 @@ const Header = () => {
     if (section === 'edit_profile') return navigate('/data_update');
     if (section === 'documents') return navigate('/personal_documents');
     if (section === 'password') return navigate('/password_change');
-    if (section === 'logout') return navigate('/admin_login', { replace: true });
+    if (section === 'logout') {
+      AdminService.logout();
+      navigate('/admin_login', { replace: true });
+    }
   };
 
   // click fuera (comportamiento mejorado)
@@ -87,6 +120,7 @@ const Header = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
 
 
   return (
@@ -116,7 +150,7 @@ const Header = () => {
           isMenuOpen={isMenuOpen}
           toggleMenu={toggleMenu}
           handleMenuClick={handleMenuClick}
-          profile={{ name: 'Juan Pérez', role: 'Administrador' }}
+          profile={adminProfile}
         />
       </div>
     </div>

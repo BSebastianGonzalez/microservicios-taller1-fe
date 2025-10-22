@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { RiLockPasswordFill } from "react-icons/ri";
 import { FaUser } from "react-icons/fa";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
+import { FiAlertCircle } from "react-icons/fi"; // Icono faltante agregado
 import AdminService from "../../../../services/AdminService";
 import Button from "../../../../components/Button";
 import Footer from "../../../../components/Footer";
@@ -26,22 +27,39 @@ const CredentialsSection = () => {
       setIsLoading(true);
       setError("");
       
+      // Llamar al servicio de login
       const response = await AdminService.login(correo, contrasenia);
 
-      if (response.success) {
+      console.log("Respuesta del login:", response);
+
+      // Verificar si la respuesta tiene token (éxito)
+      if (response.token) {
         console.log("Inicio de sesión exitoso:", response);
 
-        // Guardar los datos del administrador en localStorage
-        localStorage.setItem("admin", JSON.stringify(response.admin));
+        // El servicio ya guarda en localStorage, pero verificamos
+        const adminData = localStorage.getItem("admin");
+        console.log("Datos guardados en localStorage:", adminData);
 
         // Redirigir al usuario a la página principal
         navigate("/admin_main");
       } else {
+        // Si no hay token, mostrar mensaje de error
         setError(response.message || "Error al iniciar sesión. Verifica tus credenciales.");
       }
     } catch (error) {
-      console.error("Error al iniciar sesión:", error);
-      setError("Error al iniciar sesión. Verifica tus credenciales.");
+      console.error("Error completo al iniciar sesión:", error);
+      
+      // Manejar diferentes tipos de error
+      if (error.response) {
+        // Error de la API
+        setError(error.response.data?.message || "Error del servidor");
+      } else if (error.request) {
+        // Error de conexión
+        setError("Error de conexión. Verifica tu internet.");
+      } else {
+        // Otros errores
+        setError(error.message || "Error al iniciar sesión");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -75,8 +93,7 @@ const CredentialsSection = () => {
     return baseStyle;
   };
 
-  const showEye =
-    focusedField === "contrasenia" && Boolean(contrasenia.trim());
+  const showEye = focusedField === "contrasenia" && Boolean(contrasenia.trim());
 
   return (
     <div style={styles.pageContainer}>
@@ -97,11 +114,11 @@ const CredentialsSection = () => {
             <div style={styles.fieldGroup}>
               <label htmlFor="correo" style={styles.label}>
                 <FaUser style={styles.labelIcon} />
-                Correo Electronico
+                Correo Electrónico
               </label>
               <input
                 id="correo"
-                type="text"
+                type="email" // Cambiado a email para mejor UX
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -110,6 +127,7 @@ const CredentialsSection = () => {
                 style={getInputStyle('correo')}
                 placeholder="Ingresa tu correo electrónico"
                 disabled={isLoading}
+                autoComplete="email"
               />
             </div>
 
@@ -119,35 +137,37 @@ const CredentialsSection = () => {
                 Contraseña
               </label>
               <div style={styles.passwordContainer}>
-              <input
-                id="contrasenia"
-                type={showPassword ? "text" : "password"}
-                value={contrasenia}
-                onChange={(e) => setContrasenia(e.target.value)}
-                onKeyPress={handleKeyPress}
-                onFocus={() => handleFocus('contrasenia')}
-                onBlur={handleBlur}
-                style={getInputStyle('contrasenia')}
-                placeholder="Ingresa tu contraseña"
-                disabled={isLoading}
-              />
+                <input
+                  id="contrasenia"
+                  type={showPassword ? "text" : "password"}
+                  value={contrasenia}
+                  onChange={(e) => setContrasenia(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  onFocus={() => handleFocus('contrasenia')}
+                  onBlur={handleBlur}
+                  style={getInputStyle('contrasenia')}
+                  placeholder="Ingresa tu contraseña"
+                  disabled={isLoading}
+                  autoComplete="current-password"
+                />
 
-              {showEye && (
-              <button
-                type="button"
-                style={styles.eyeButton}
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={togglePasswordVisibility}
-                disabled={isLoading}
-              >
-                  {showPassword ? (
-                    <MdVisibilityOff style={styles.eyeIcon} />
-                  ) : (
-                    <MdVisibility style={styles.eyeIcon} />
-                  )}
-                </button>
-              )}
+                {showEye && (
+                  <button
+                    type="button"
+                    style={styles.eyeButton}
+                    onMouseDown={(e) => e.preventDefault()} // Mejor que onPointerDown
+                    onClick={togglePasswordVisibility}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? (
+                      <MdVisibilityOff style={styles.eyeIcon} />
+                    ) : (
+                      <MdVisibility style={styles.eyeIcon} />
+                    )}
+                  </button>
+                )}
               </div>
+            </div>
 
             {error && (
               <div style={styles.errorContainer}>
@@ -155,9 +175,8 @@ const CredentialsSection = () => {
                 <p style={styles.errorText}>{error}</p>
               </div>
             )}
-            </div>
 
-            {/* Botón de Iniciar Sesión más ancho y con color mejorado */}
+            {/* Botón de Iniciar Sesión */}
             <div style={styles.buttonWrap}>
               {isLoading ? (
                 <button type="button" style={styles.loadingButton} disabled>
@@ -165,7 +184,11 @@ const CredentialsSection = () => {
                   <span>Iniciando sesión...</span>
                 </button>
               ) : (
-                <Button text="Iniciar Sesión" onClick={handleLogin} />
+                <Button 
+                  text="Iniciar Sesión" 
+                  onClick={handleLogin}
+                  disabled={isLoading}
+                />
               )}
             </div>
           </div>
@@ -175,6 +198,20 @@ const CredentialsSection = () => {
     </div>
   );
 };
+
+// Agregar los keyframes para la animación del spinner
+const globalStyles = `
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+`;
+
+// Inyectar los estilos globales
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.innerText = globalStyles;
+  document.head.appendChild(styleSheet);
+}
 
 const styles = {
   pageContainer: {
@@ -244,7 +281,7 @@ const styles = {
     marginRight: "auto",
     alignItems: "center",
     paddingLeft: "1.5rem",
-    paddingRight: "1.5rem", // Agrega el mismo espacio a ambos lados
+    paddingRight: "1.5rem",
     boxSizing: "border-box",
   },
   fieldGroup: {
@@ -266,7 +303,7 @@ const styles = {
   },
   labelIcon: {
     fontSize: "1.1rem",
-    color: "#2463ebff",
+    color: "#2463eb",
   },
   input: {
     width: "100%",
@@ -277,6 +314,7 @@ const styles = {
     transition: "all 0.2s ease-in-out",
     outline: "none",
     backgroundColor: "#f9fafb",
+    boxSizing: "border-box",
   },
   passwordContainer: {
     position: "relative",
@@ -284,107 +322,49 @@ const styles = {
   },
   eyeButton: {
     position: "absolute",
-    right: "-25px",
+    right: "12px", // Ajustado para mejor posición
     top: "50%",
     transform: "translateY(-50%)",
     background: "none",
-    padding: 0,
     border: "none",
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    //transition: "all 0.2s ease-in-out",
+    padding: "4px",
+    borderRadius: "4px",
   },
   eyeIcon: {
     fontSize: "1.2rem",
-    color: "#2463ebff",
-    border: "none",
-    background: "none",
+    color: "#6b7280",
   },
   errorContainer: {
     display: "flex",
     alignItems: "center",
     gap: "0.5rem",
-    padding: "0.9rem 1rem",
-    backgroundColor: "#fff1f2",
-    border: "1.5px solid #fca5a5",
-    borderRadius: "10px",
-    borderLeft: "4px solid #ef4444",
-    marginBottom: "0.5rem",
+    padding: "0.75rem 1rem",
+    backgroundColor: "#fef2f2",
+    border: "1px solid #fecaca",
+    borderRadius: "8px",
+    marginTop: "0.5rem",
   },
   errorIcon: {
-    fontSize: "1.25rem",
+    fontSize: "1.1rem",
     color: "#dc2626",
+    flexShrink: 0,
   },
   errorText: {
     color: "#dc2626",
-    fontSize: "0.95rem",
+    fontSize: "0.9rem",
     fontWeight: "500",
-    margin: 0,
-  },
-  loginButton: {
-    width: "70%", // Reducido el ancho para que sea menos ancho
-    padding: "1.1rem",
-    background: "linear-gradient(90deg, #2563eb 0%, #3b82f6 100%)",
-    color: "#fff",
-    border: "none",
-    borderRadius: "14px",
-    fontSize: "1.15rem",
-    fontWeight: "700",
-    cursor: "pointer",
-    transition: "all 0.2s ease-in-out",
-    marginTop: "1.2rem",
-    marginBottom: "1.2rem",
-    boxShadow: "0 2px 8px rgba(37, 99, 235, 0.15)",
-    letterSpacing: "0.5px",
-    alignSelf: "center", // Centra el botón si el contenedor es más ancho
-  },
-  loadingContainer: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.75rem",
-  },
-  spinner: {
-    width: "20px",
-    height: "20px",
-    border: "2px solid #ffffff",
-    borderTop: "2px solid transparent",
-    borderRadius: "50%",
-    animation: "spin 1s linear infinite",
-  },
-  // Nuevo: contenedor para los botones secundarios, centrados y con espacio
-  secondaryButtonsContainer: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: "1.2rem",
-    marginTop: "0.5rem",
-    width: "100%",
-  },
-  secondaryButton: {
-    flex: 1,
-    padding: "0.85rem 0",
-    backgroundColor: "#f1f5f9",
-    color: "#334155",
-    border: "1.5px solid #e0e7ef",
-    borderRadius: "12px",
-    fontSize: "1rem",
-    fontWeight: "600",
-    cursor: "pointer",
-    transition: "all 0.2s ease-in-out",
-    textAlign: "center",
-    boxShadow: "0 1px 4px rgba(30,41,59,0.04)",
-    minWidth: "0",
     margin: 0,
   },
   buttonWrap: {
     marginTop: "24px",
     display: "flex",
     justifyContent: "center",
+    width: "100%",
   },
-
   loadingButton: {
     display: "inline-flex",
     alignItems: "center",
@@ -399,20 +379,17 @@ const styles = {
     cursor: "not-allowed",
     background: "linear-gradient(90deg, #2563eb 0%, #1e40af 100%)",
     boxShadow: "0 6px 16px rgba(37,99,235,0.18)",
+    width: "100%",
+    maxWidth: "300px",
   },
-
   spinnerInline: {
     width: "16px",
     height: "16px",
     border: "2px solid rgba(255,255,255,0.7)",
     borderTopColor: "transparent",
     borderRadius: "50%",
-    animation: "spin .9s linear infinite",
+    animation: "spin 0.9s linear infinite",
   },
-  "@keyframes spin": {
-    to: { transform: "rotate(360deg)" },
-  },
-
 };
 
 export default CredentialsSection;
