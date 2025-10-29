@@ -99,7 +99,7 @@ const AdminService = {
 getAdminById: async (id) => {
     try {
       console.log(`📡 Obteniendo admin con ID: ${id}`);
-      const response = await axiosInstance.get(`/admin/${id}`);
+      const response = await axiosInstance.get(`/api/admin/${id}`);
       console.log('✅ Datos completos del admin:', response.data);
       return response.data;
     } catch (error) {
