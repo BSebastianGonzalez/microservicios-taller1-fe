@@ -131,6 +131,9 @@ getAdminById: async (id) => {
     }
   },
 
+
+  
+
   // Eliminar un administrador
   deleteAdmin: async (id) => {
     try {
