@@ -130,8 +130,8 @@ const AdminService = {
       }
 
   console.log('Actualizando contraseña del administrador (id oculto en logs)');
-      const response = await axios.put(`/api/admin/${id}`, { contrasenia: nuevaContrasenia });
-      return response.data;
+  const res = await axios.put(`/api/admin/${id}`, { contrasenia: nuevaContrasenia });
+  return res.data;
     } catch (error) {
       console.error('Error al cambiar la contraseña via /api/admin/{id}:', error);
       throw error.response?.data || error;
