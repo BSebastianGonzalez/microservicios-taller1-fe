@@ -20,12 +20,13 @@ const DataUpdate = () => {
       direccion: "N/A",
     };
 
+  // Normalizar los valores iniciales a strings para evitar errores de tipo
   const [formData, setFormData] = useState({
-    nombre: adminData.nombre || "",
-    apellido: adminData.apellido || "",
-    correo: adminData.correo || "",
-    telefono: adminData.telefono || "",
-    direccion: adminData.direccion || "",
+    nombre: String(adminData.nombre ?? "") || "",
+    apellido: String(adminData.apellido ?? "") || "",
+    correo: String(adminData.correo ?? "") || "",
+    telefono: String(adminData.telefono ?? "") || "",
+    direccion: String(adminData.direccion ?? "") || "",
   });
 
   const [initialFormData] = useState(formData);
@@ -36,21 +37,46 @@ const DataUpdate = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    // normalizar telefono siempre como string
+    if (name === 'telefono') {
+      // guardamos teléfono como string, permitimos que el usuario escriba separadores
+      setFormData((prev) => ({ ...prev, [name]: String(value) }));
+    } else if (name === 'nombre' || name === 'apellido') {
+      // permitir solo letras (incluye acentos) y espacios en nombre/apellido
+      const sanitized = String(value).replace(/[^A-Za-zÀ-ÿ\s]/g, '');
+      setFormData((prev) => ({ ...prev, [name]: sanitized }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const validate = () => {
-    if (!formData.nombre?.trim()) return "El nombre es obligatorio.";
-    if (!formData.apellido?.trim()) return "El apellido es obligatorio.";
-    if (!formData.telefono?.trim()) return "El teléfono es obligatorio.";
-    if (!formData.direccion?.trim()) return "La dirección es obligatoria.";
-    
-    // Validación de teléfono (solo números y algunos caracteres especiales)
-    const phoneRegex = /^[0-9+\-\s()]{8,15}$/;
-    if (!phoneRegex.test(formData.telefono)) {
-      return "El teléfono debe contener entre 8 y 15 dígitos válidos.";
+    const nombre = String(formData.nombre ?? '').trim();
+    const apellido = String(formData.apellido ?? '').trim();
+    const telefonoStr = String(formData.telefono ?? '').trim();
+    const direccion = String(formData.direccion ?? '').trim();
+
+    if (!nombre) return "El nombre es obligatorio.";
+    if (!apellido) return "El apellido es obligatorio.";
+    if (!telefonoStr) return "El teléfono es obligatorio.";
+    if (!direccion) return "La dirección es obligatoria.";
+    // Validación: nombres y apellidos solo letras y espacios
+    const nameRegex = /^[A-Za-zÀ-ÿ\s]+$/;
+    if (!nameRegex.test(nombre)) return "El nombre solo puede contener letras y espacios.";
+    if (!nameRegex.test(apellido)) return "El apellido solo puede contener letras y espacios.";
+
+    // Validación de teléfono: extraer solo dígitos y exigir máximo 10 dígitos
+    const telefonoDigits = telefonoStr.replace(/\D/g, '');
+    if (!/^[0-9]+$/.test(telefonoDigits)) {
+      return "El teléfono debe contener solo números.";
     }
-    
+    if (telefonoDigits.length > 10) {
+      return "El teléfono debe contener como máximo 10 dígitos.";
+    }
+    if (telefonoDigits.length === 0) {
+      return "El teléfono es obligatorio.";
+    }
+
     return null;
   };
 
@@ -68,8 +94,48 @@ const DataUpdate = () => {
     }
 
     try {
-      const updatedData = await AdminService.updateAdmin(adminData.id, formData);
-      localStorage.setItem("admin", JSON.stringify(updatedData));
+      // Asegurarnos de enviar explícitamente el campo 'telefono' en el payload
+      // El backend espera 'telefono' como Long (numérico). Convertimos antes de enviar.
+      const telefonoNum = (() => {
+        if (formData.telefono === null || formData.telefono === undefined || formData.telefono === '') return null;
+        const n = Number(String(formData.telefono).replace(/[^0-9]/g, ''));
+        return Number.isFinite(n) ? n : null;
+      })();
+
+      const payload = {
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        correo: formData.correo,
+        telefono: telefonoNum,
+        direccion: formData.direccion,
+      };
+
+      // Normalizar posibles formas de id que tengamos en adminData/localStorage
+      const idCandidate = adminData?.id || adminData?._id || adminData?.admin?.id || adminData?.admin?._id || adminData?.user?.id || adminData?.admin?.userId;
+      const id = Number(idCandidate);
+      if (!Number.isFinite(id)) {
+        const msg = 'No se pudo determinar el ID del administrador. Reingresa sesión o contacta al administrador.';
+        console.error('ID inválido al actualizar admin:', idCandidate);
+        setErrMsg(msg);
+        setErrorOpen(true);
+        setIsSubmitting(false);
+        return;
+      }
+
+  // No registrar en consola datos sensibles (id/payload)
+
+      const updatedData = await AdminService.updateAdmin(id, payload);
+      // El backend puede devolver distintos shapes (el admin actualizado o solo un mensaje).
+      // Guardamos en localStorage intentando preservar el objeto original y sobreescribir con los campos actualizados.
+      try {
+        const stored = JSON.parse(localStorage.getItem('admin')) || {};
+        const merged = { ...stored, ...updatedData };
+        localStorage.setItem('admin', JSON.stringify(merged));
+      } catch (errMerge) {
+        // fallback simple
+        console.warn('No se pudo mergear la respuesta en localStorage:', errMerge);
+        localStorage.setItem('admin', JSON.stringify(updatedData));
+      }
       setSuccessOpen(true);
     } catch (error) {
       console.error("Error al actualizar:", error);
@@ -154,7 +220,7 @@ const DataUpdate = () => {
       {/* Tarjeta principal de edición */}
       <form onSubmit={handleSubmit} style={styles.mainCard}>
         <div style={styles.cardHeader}>
-          <FiUser size={24} color="#4f46e5" />
+          <FiUser size={24} color="#2463eb" />
           <h2 style={styles.cardTitle}>Información Personal</h2>
           <div style={styles.statusBadge}>
             {hasEmptyFields() ? (
@@ -387,21 +453,10 @@ const styles = {
     flexDirection: "column",
   },
 
-  welcomeTitle: {
-    fontSize: "2.5rem",
-    fontWeight: "800",
-    color: "#1e293b",
-    margin: "0",
-    background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-    backgroundClip: "text",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-  },
-
   welcomeSubtitle: {
     fontSize: "1.1rem",
-    color: "#64748b",
-    margin: "0.5rem 0 0 0",
+    color: "#000000",
+    margin: "0 0 0 0",
     fontWeight: "500",
   },
 
@@ -624,13 +679,13 @@ const styles = {
   statNumber: {
     fontSize: "1.5rem",
     fontWeight: "700",
-    color: "#1e293b",
+    color: "#000000",
     marginBottom: "0.25rem",
   },
 
   statLabel: {
     fontSize: "0.9rem",
-    color: "#64748b",
+    color: "#000000",
     fontWeight: "500",
   },
 };

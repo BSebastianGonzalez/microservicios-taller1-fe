@@ -119,7 +119,17 @@ const ComplaintsList = () => {
   /* ---------------- Render ------------------ */
   return (
     <div style={styles.page}>
-      <style>{`@keyframes modalIn { from { opacity:.4; transform: translateY(6px) } to { opacity:1; transform: translateY(0) } }`}</style>
+      <style>{`
+        @keyframes modalIn { from { opacity:.4; transform: translateY(6px) } to { opacity:1; transform: translateY(0) } }
+        /* Mover el icono del selector de fecha más a la derecha */
+        .complaints-date-input::-webkit-calendar-picker-indicator {
+          transform: translateX(50px);
+        }
+        /* Firefox (puede ignorarse si no aplica) */
+        .complaints-date-input::-moz-focus-inner {
+          transform: translateX(50px);
+        }
+      `}</style>
 
       {/* Botón filtros anclado a la derecha (sticky) */}
       <div style={styles.rightDock}>
@@ -277,7 +287,7 @@ const ComplaintsList = () => {
               />
             </div>
 
-            <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ display: "flex", gap: 10 }}>
               <div style={{ ...styles.field, flex: 1 }}>
                 <label style={styles.label}>Fecha desde</label>
                 <input
@@ -285,6 +295,7 @@ const ComplaintsList = () => {
                   value={fechaInicio}
                   onChange={(e) => setFechaInicio(e.target.value)}
                   style={styles.dateInput}
+                  className="complaints-date-input"
                   onFocus={(e) =>
                     Object.assign(e.currentTarget.style, styles.dateInputFocus)
                   }
@@ -300,6 +311,7 @@ const ComplaintsList = () => {
                   value={fechaFin}
                   onChange={(e) => setFechaFin(e.target.value)}
                   style={styles.dateInput}
+                  className="complaints-date-input"
                   onFocus={(e) =>
                     Object.assign(e.currentTarget.style, styles.dateInputFocus)
                   }
@@ -519,7 +531,7 @@ const styles = {
     height: "44px",
     boxSizing: "border-box",
     padding: "0 14px 0 14px",
-    paddingRight: "40px",
+    paddingRight: "64px",
     fontSize: "0.95rem",
     fontWeight: 500,
     color: "#0f172a",

@@ -14,8 +14,8 @@ const ProfileMenu = ({ menuRef, isMenuOpen, toggleMenu, handleMenuClick, profile
     },
     profileImage: { width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #e9ecef' },
     profileInfo: { display: 'flex', flexDirection: 'column' },
-    profileName: { fontWeight: '600', fontSize: '14px', color: '#333' },
-    profileRole: { fontSize: '12px', color: '#6c757d' },
+    profileName: { fontWeight: '700', fontSize: '14px', color: '#000000' },
+    profileRole: { fontSize: '12px', color: '#000000' },
     dropdownMenu: { 
         position: 'absolute', 
         top: '70.5px', 
@@ -30,9 +30,9 @@ const ProfileMenu = ({ menuRef, isMenuOpen, toggleMenu, handleMenuClick, profile
         visibility: isMenuOpen ? 'visible' : 'hidden', transform: isMenuOpen ? 'translateY(0)' : 'translateY(-10px)', 
         transition: 'all 0.3s ease' 
     },
-    menuItem: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', cursor: 'pointer', transition: 'background-color 0.2s', color: '#333', textDecoration: 'none' },
+    menuItem: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', cursor: 'pointer', transition: 'background-color 0.2s', color: '#000000', textDecoration: 'none' },
     menuDivider: { height: '1px', backgroundColor: '#e9ecef', margin: '8px 0' },
-    icon: { width: '18px', height: '18px', color: '#6c757d', display: 'inline-flex', alignItems: 'center' },
+    icon: { width: '18px', height: '18px', color: '#2463eb', display: 'inline-flex', alignItems: 'center' },
     chevron: { marginLeft: '6px', display: 'inline-flex', alignItems: 'center', transition: 'transform 0.18s ease', color: '#6b7280' },
   };
 
@@ -51,7 +51,7 @@ const ProfileMenu = ({ menuRef, isMenuOpen, toggleMenu, handleMenuClick, profile
       <div style={styles.dropdownMenu} role="menu" aria-hidden={!isMenuOpen}>
         <div style={styles.menuItem} onClick={() => handleMenuClick('view_profile')} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}><FiUser style={styles.icon} />Ver Perfil</div>
         <div style={styles.menuItem} onClick={() => handleMenuClick('edit_profile')} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}><FiUser style={styles.icon} />Editar Perfil</div>
-        <div style={styles.menuItem} onClick={() => handleMenuClick('password')} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}><FiLock style={styles.icon} />Cambiar Contraseña</div>
+        <div style={styles.menuItem} onClick={() => handleMenuClick('change_password')} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}><FiLock style={styles.icon} />Cambiar Contraseña</div>
         <div style={styles.menuDivider}></div>
         <div style={styles.menuItem} onClick={() => handleMenuClick('documents')} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}><FiFileText style={styles.icon} />Documentos Personales</div>
         <div style={styles.menuDivider}></div>

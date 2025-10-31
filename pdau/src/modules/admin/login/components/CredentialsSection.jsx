@@ -30,15 +30,12 @@ const CredentialsSection = () => {
       // Llamar al servicio de login
       const response = await AdminService.login(correo, contrasenia);
 
-      console.log("Respuesta del login:", response);
 
       // Verificar si la respuesta tiene token (éxito)
       if (response.token) {
-        console.log("Inicio de sesión exitoso:", response);
 
-        // El servicio ya guarda en localStorage, pero verificamos
-        const adminData = localStorage.getItem("admin");
-        console.log("Datos guardados en localStorage:", adminData);
+
+    // El servicio ya guarda en localStorage; no registramos datos sensibles en la consola
 
         // Redirigir al usuario a la página principal
         navigate("/admin_main");
@@ -176,6 +173,20 @@ const CredentialsSection = () => {
               </div>
             )}
 
+            {/* Enlace para restablecer contraseña */}
+            <div style={styles.forgotWrap}>
+              <button
+                type="button"
+                onClick={() => navigate('/admin_password_reset')}
+                style={styles.forgotButton}
+                onFocus={(e) => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+                onBlur={(e) => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+                disabled={isLoading}
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
+
             {/* Botón de Iniciar Sesión */}
             <div style={styles.buttonWrap}>
               {isLoading ? (
@@ -191,6 +202,7 @@ const CredentialsSection = () => {
                 />
               )}
             </div>
+          
           </div>
         </div>
       </div>
@@ -268,7 +280,7 @@ const styles = {
   },
   subtitle: {
     fontSize: "1rem",
-    color: "#6b7280",
+    color: "#000000",
     fontWeight: "500",
   },
   form: {
@@ -298,7 +310,7 @@ const styles = {
     gap: "0.5rem",
     fontSize: "0.95rem",
     fontWeight: "600",
-    color: "#374151",
+    color: "#000000",
     marginBottom: "0.25rem",
   },
   labelIcon: {
@@ -336,7 +348,7 @@ const styles = {
   },
   eyeIcon: {
     fontSize: "1.2rem",
-    color: "#6b7280",
+    color: "#2463eb",
   },
   errorContainer: {
     display: "flex",
@@ -364,6 +376,28 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     width: "100%",
+  },
+  forgotWrap: {
+    display: "flex",
+    justifyContent: "flex-end",
+    marginLeft: "-2.5rem",
+    width: "100%",
+    borderBottom: "none",
+    border: "none",
+    marginBottom: "-1rem",
+    marginTop: "-0.5rem",
+  },
+  forgotButton: {
+    background: "none",
+    border: "none",
+    color: "#2563eb",
+    fontWeight: 600,
+    cursor: "pointer",
+    padding: "6px 8px",
+    borderRadius: "6px",
+    outline: 'none',
+    boxShadow: 'none',
+    WebkitTapHighlightColor: 'transparent',
   },
   loadingButton: {
     display: "inline-flex",

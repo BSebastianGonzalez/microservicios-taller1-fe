@@ -11,6 +11,8 @@ const Modal = ({
   confirmText = "Aceptar",
   onCancel,
   cancelText,
+  icon: customIcon,
+  autoFocusConfirm = false,
 }) => {
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose && onClose();
@@ -18,14 +20,24 @@ const Modal = ({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  // ref for confirm button to autofocus for accessibility
+  const confirmRef = React.useRef(null);
+  React.useEffect(() => {
+    if (open && autoFocusConfirm && confirmRef.current) {
+      // small timeout to ensure element is in DOM
+      setTimeout(() => confirmRef.current && confirmRef.current.focus(), 50);
+    }
+  }, [open, autoFocusConfirm]);
+
   if (!open) return null;
 
   const isSuccess = type === "success";
-  const headerIcon = isSuccess ? (
+  const defaultIcon = isSuccess ? (
     <FiCheckCircle size={28} style={{ color: "#16a34a" }} />
   ) : (
     <FiXCircle size={28} style={{ color: "#dc2626" }} />
   );
+  const headerIcon = customIcon || defaultIcon;
 
   return (
     <div
@@ -33,6 +45,10 @@ const Modal = ({
       onClick={(e) => {
         if (e.target === e.currentTarget && onClose) onClose();
       }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      aria-describedby="modal-desc"
     >
       <div style={styles.modal}>
         {/* Close (X) */}
@@ -58,7 +74,12 @@ const Modal = ({
               {cancelText}
             </button>
           )}
-          <button style={styles.primaryBtn} onClick={onConfirm || onClose}>
+          <button
+            ref={confirmRef}
+            style={styles.primaryBtn}
+            onClick={onConfirm || onClose}
+            aria-label={confirmText}
+          >
             {confirmText}
           </button>
         </div>
