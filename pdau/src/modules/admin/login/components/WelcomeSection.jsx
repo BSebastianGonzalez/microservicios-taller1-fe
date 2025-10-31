@@ -22,7 +22,7 @@ const WelcomeSection = () => {
 
   const features = [
     { icon: FiUsers, text: "Gestión de denuncias", description: "Supervisa y gestiona denuncias anónimas del sistema", path: '/read_complaint' },
-    { icon: FiSettings, text: "Administración de usuarios", description: "Controla accesos y permisos del personal" },
+    { icon: FiSettings, text: "Generar estadísticas", description: "Visualiza y analiza datos relevantes del sistema", path: '/generate_statistics' },
     { icon: FiShield, text: "Archivos y reportes", description: "Genera reportes y administra documentación" }
   ];
 
@@ -34,7 +34,7 @@ const WelcomeSection = () => {
         <div style={styles.header}>
           <div style={styles.avatarSection}>
             <div style={styles.avatar}>
-              <FiUsers size={32} color="#4f46e5" />
+              <FiUsers size={32} color="#2463eb" />
             </div>
             <div style={styles.welcomeText}>
               <h1 style={styles.title}>Panel de Administración</h1>
@@ -114,13 +114,13 @@ const FeatureCard = ({ feature }) => {
       onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
     >
       <div style={styles.featureIcon}>
-        <feature.icon size={24} color="#4f46e5" />
+        <feature.icon size={24} color="#2463eb" />
       </div>
       <div style={styles.featureContent}>
         <h4 style={styles.featureTitle}>{feature.text}</h4>
         <p style={styles.featureDescription}>{feature.description}</p>
       </div>
-      <FiArrowRight size={18} color="#64748b" style={styles.arrowIcon} />
+      <FiArrowRight size={18} color="#000000" style={styles.arrowIcon} />
     </div>
   );
 };
@@ -164,7 +164,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    border: "3px solid #4f46e5",
+    border: "3px solid #2463eb",
     boxShadow: "0 8px 25px rgba(79, 70, 229, 0.15)",
   },
 
@@ -176,9 +176,8 @@ const styles = {
   title: {
     fontSize: "2.5rem",
     fontWeight: "800",
-    color: "#1e293b",
     margin: "0 0 0.5rem 0",
-    background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+    background: "#2463eb",
     backgroundClip: "text",
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
@@ -188,7 +187,7 @@ const styles = {
   subtitle: {
     fontSize: "1.4rem",
     fontWeight: "600",
-    color: "#64748b",
+    color: "#000000",
     margin: "0",
   },
 

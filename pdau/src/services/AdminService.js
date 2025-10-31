@@ -98,6 +98,7 @@ const AdminService = {
 
 getAdminById: async (id) => {
     try {
+      const response = await axios.get(`/api/admin/${id}`);
       console.log(`📡 Obteniendo admin con ID: ${id}`);
       const response = await axiosInstance.get(`/api/admin/${id}`);
       console.log('✅ Datos completos del admin:', response.data);
@@ -122,7 +123,7 @@ getAdminById: async (id) => {
   // Actualizar un administrador existente
   updateAdmin: async (id, adminDetails) => {
     try {
-      const response = await axios.put(`/admins/${id}`, adminDetails);
+      const response = await axios.put(`/api/admin/${id}`, adminDetails);
       return response.data;
     } catch (error) {
       console.error(`Error al actualizar el administrador con ID ${id}:`, error);
@@ -137,6 +138,51 @@ getAdminById: async (id) => {
       return response.data;
     } catch (error) {
       console.error(`Error al eliminar el administrador con ID ${id}:`, error);
+      throw error.response?.data || error;
+    }
+  },
+  
+  // Solicitar restablecimiento de contraseña (envía correo con token)
+  requestPasswordReset: async (correo) => {
+    try {
+      // Asumimos endpoint POST /auth/forgot-password
+      const response = await axios.post('/auth/forgot-password', { correo });
+      return response.data;
+    } catch (error) {
+      console.error('Error al solicitar restablecimiento de contraseña:', error);
+      throw error.response?.data || error;
+    }
+  },
+
+  // Confirmar / resetear contraseña con token
+  resetPassword: async (token, nuevaContrasenia) => {
+    try {
+      // Asumimos endpoint POST /auth/reset-password
+      const response = await axios.post('/auth/reset-password', { token, nuevaContrasenia });
+      return response.data;
+    } catch (error) {
+      console.error('Error al resetear la contraseña:', error);
+      throw error.response?.data || error;
+    }
+  },
+  
+  // Cambiar contraseña del usuario autenticado
+  changePassword: async (nuevaContrasenia) => {
+    // El backend expone PUT /api/admin/{id} para actualizar los datos,
+    // incluyendo la contraseña (campo 'contrasenia').
+    try {
+      const current = AdminService.getCurrentAdmin();
+      const idCandidate = current?.id || current?._id || current?.admin?.id || current?.user?.id;
+      const id = Number(idCandidate);
+      if (!Number.isFinite(id)) {
+        throw new Error('ID del admin no encontrado en localStorage');
+      }
+
+  console.log('Actualizando contraseña del administrador (id oculto en logs)');
+      const response = await axios.put(`/api/admin/${id}`, { contrasenia: nuevaContrasenia });
+      return response.data;
+    } catch (error) {
+      console.error('Error al cambiar la contraseña via /api/admin/{id}:', error);
       throw error.response?.data || error;
     }
   },

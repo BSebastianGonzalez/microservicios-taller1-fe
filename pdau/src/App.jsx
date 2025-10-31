@@ -9,6 +9,9 @@ import ConsultResponse from './pages/complaint/ConsultResponse';
 import ViewComplaints from './pages/complaint/ViewComplaints';
 import ViewArchivedComplaints from './pages/complaint/ViewArchivedComplaints';
 import LoginPage from './pages/admin/LoginPage';
+import PasswordResetPage from './pages/admin/PasswordResetPage';
+import PasswordConfirmPage from './pages/admin/PasswordConfirmPage';
+import ChangePasswordPage from './pages/admin/ChangePasswordPage';
 import AdminPage from './pages/admin/AdminPage';
 import DataPage from './pages/admin/DataPage';
 import LawFrame from './pages/user/LawFrame';
@@ -35,8 +38,11 @@ function App() {
         
         {/* Rutas del administrador */}
         <Route path="/admin_login" element={<LoginPage />} />
+        <Route path="/admin_password_reset" element={<PasswordResetPage />} />
+        <Route path="/admin_password_confirm" element={<PasswordConfirmPage />} />
         <Route path="/admin_main" element={<AdminPage />} />
         <Route path="/data" element={<DataPage />} />
+        <Route path="/admin_change_password" element={<ChangePasswordPage />} />
         <Route path="/data_update" element={<DataUpdatePage />} />
         <Route path="/personal_documents" element={<PersonalDocumentsPage />} />
         <Route path="/read_complaint" element={<ViewComplaints />} />

@@ -3,18 +3,30 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Button from "../../../components/Button";
 import Modal from "../../../components/Modal";
 import { FiUser, FiMail, FiPhone, FiMapPin, FiEdit3, FiShield, FiFileText } from "react-icons/fi";
+import AdminService from '../../../services/AdminService';
 
 const DataSection = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const adminData = JSON.parse(localStorage.getItem("admin")) || {
-    nombre: "N/A",
-    apellido: "N/A",
-    correo: "N/A",
-    telefono: "N/A",
-    direccion: "N/A",
-  };
+  const [adminData, setAdminData] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("admin")) || {};
+      // si el objeto completo ya contiene los campos, úsalos como fallback inmediato
+      return {
+        nombre: stored.nombre || stored.admin?.nombre || "N/A",
+        apellido: stored.apellido || stored.admin?.apellido || "N/A",
+        correo: stored.correo || stored.admin?.correo || stored.admin?.correo || "N/A",
+        telefono: stored.telefono || stored.admin?.telefono || "N/A",
+        direccion: stored.direccion || stored.admin?.direccion || "N/A",
+      };
+    } catch (err) {
+      console.error('Error parseando localStorage admin:', err);
+      return { nombre: "N/A", apellido: "N/A", correo: "N/A", telefono: "N/A", direccion: "N/A" };
+    }
+  });
+
+  const [loading, setLoading] = useState(false);
 
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
@@ -26,6 +38,45 @@ const DataSection = () => {
       navigate(".", { replace: true, state: {} });
     }
   }, [location.state, navigate]);
+
+  // Al montar, intentar obtener datos reales por ID usando AdminService.getAdminById
+  useEffect(() => {
+    const fetchAdmin = async () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('admin')) || {};
+        // múltiples formas posibles de almacenar el id según backend
+        const idCandidate = stored?.id || stored?._id || stored?.admin?.id || stored?.admin?._id || stored?.user?.id || stored?.admin?.userId;
+        if (!idCandidate) {
+          console.warn('No se encontró id de admin en localStorage.admin, omitiendo fetch por id');
+          return; // no hay id disponible
+        }
+
+        // Asegurar que enviamos un Long/Number al backend (controller espera Long)
+        const id = Number(idCandidate);
+        if (!Number.isFinite(id)) {
+          console.warn('El id obtenido no es numérico:', idCandidate);
+          return;
+        }
+
+        setLoading(true);
+  const data = await AdminService.getAdminById(id);
+        // esperar que la respuesta tenga campos en idioma esperado
+        setAdminData({
+          nombre: data.nombre || data.firstName || data.admin?.nombre || 'N/A',
+          apellido: data.apellido || data.lastName || data.admin?.apellido || 'N/A',
+          correo: data.correo || data.email || data.admin?.correo || 'N/A',
+          telefono: data.telefono || data.phone || data.admin?.telefono || 'N/A',
+          direccion: data.direccion || data.address || data.admin?.direccion || 'N/A',
+        });
+      } catch (err) {
+        console.warn('No se pudo obtener admin por id:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdmin();
+  }, []);
 
   const hasEmptyFields = () => {
     const vals = [
@@ -50,7 +101,7 @@ const DataSection = () => {
   };
 
   const handleSecurityClick = () => {
-    navigate("/change_password");
+    navigate("/admin_change_password");
   };
 
   const handleDocumentsClick = () => {
@@ -64,12 +115,12 @@ const DataSection = () => {
         <div style={styles.headerContent}>
           <div style={styles.avatarSection}>
             <div style={styles.avatar}>
-              <FiUser size={32} color="#4f46e5" />
+              <FiUser size={32} color="#2463eb" />
             </div>
             <div style={styles.welcomeText}>
               <p style={styles.welcomeSubtitle}>
-                Gestiona tu información personal y configuración de cuenta
-              </p>
+                  {loading ? 'Cargando información...' : 'Gestiona tu información personal y configuración de cuenta'}
+                </p>
             </div>
           </div>
           <div style={styles.quickActions}>
@@ -118,7 +169,7 @@ const DataSection = () => {
       {/* Tarjeta principal de información */}
       <div style={styles.mainCard}>
         <div style={styles.cardHeader}>
-          <FiUser size={24} color="#4f46e5" />
+          <FiUser size={24} color="#2563eb" />
           <h2 style={styles.cardTitle}>Información Personal</h2>
           <div style={styles.statusBadge}>
             {hasEmptyFields() ? (
@@ -226,7 +277,7 @@ const DataSection = () => {
       <div style={styles.statsGrid}>
         <div style={styles.statCard}>
           <div style={styles.statIcon}>
-            <FiUser size={24} color="#2563ebff" />
+            <FiUser size={24} color="#2563eb" />
           </div>
           <div style={styles.statContent}>
             <div style={styles.statNumber}>

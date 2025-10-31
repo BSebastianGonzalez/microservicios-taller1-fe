@@ -18,18 +18,45 @@ const Header = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const loadAdminData = () => {
+    const loadAdminData = async () => {
       try {
+        // Primero, leer lo que hay en localStorage (login info)
+        const stored = JSON.parse(localStorage.getItem('admin')) || {};
+
+        // Intentar extraer un id numérico conocido
+        const idCandidate = stored?.id || stored?._id || stored?.admin?.id || stored?.admin?._id || stored?.user?.id || stored?.admin?.userId;
+
+        if (idCandidate) {
+          const id = Number(idCandidate);
+          if (Number.isFinite(id)) {
+            try {
+              const data = await AdminService.getAdminById(id);
+              // Mapear posibles nombres/roles devueltos por backend
+              const nombre = data?.nombre || data?.firstName || data?.name || data?.admin?.nombre;
+              const apellido = data?.apellido || data?.lastName || data?.surname || data?.admin?.apellido;
+              const rol = data?.rol || data?.role || data?.admin?.rol || data?.admin?.role;
+
+              setAdminProfile({
+                name: `${nombre || ''} ${apellido || ''}`.trim() || 'Administrador',
+                role: rol || 'Administrador'
+              });
+              return;
+            } catch (err) {
+              console.warn('No se pudo obtener admin por id:', err);
+              // caeremos al fallback y mostraremos lo que hay en localStorage
+            }
+          }
+        }
+
+        // Fallback: usar lo que esté guardado en localStorage (si existe)
         const adminData = AdminService.getCurrentAdmin();
         if (adminData && adminData.admin) {
-          // Si tu API devuelve los datos dentro de un objeto "admin"
           const { nombre, apellido, rol } = adminData.admin;
           setAdminProfile({
             name: `${nombre || ''} ${apellido || ''}`.trim() || 'Administrador',
             role: rol || 'Administrador'
           });
         } else if (adminData) {
-          // Si los datos están en el nivel principal
           const { nombre, apellido, rol } = adminData;
           setAdminProfile({
             name: `${nombre || ''} ${apellido || ''}`.trim() || 'Administrador',
@@ -57,7 +84,7 @@ const Header = () => {
       '/archived_complaints': 'Denuncias Archivadas',
       '/stats': 'Estadísticas',
       '/reports': 'Reportes',
-      '/password_change': 'Cambiar Contraseña'
+      '/admin_change_password': 'Cambiar contraseña'
     };
     
     setPageTitle(titles[path] || 'Dashboard');
@@ -94,13 +121,44 @@ const Header = () => {
     setIsNotifOpen(false); 
   };
 
-  const handleMenuClick = (section) => {
+  const handleMenuClick = async (section) => {
     setActiveSection(section);
     setIsMenuOpen(false);
+
     if (section === 'view_profile') return navigate('/data');
-    if (section === 'edit_profile') return navigate('/data_update');
+
+    if (section === 'edit_profile') {
+      // intentar pasar los datos del admin al navegar para que el formulario cargue inmediatamente
+      try {
+        const stored = AdminService.getCurrentAdmin() || {};
+        const idCandidate = stored?.id || stored?._id || stored?.admin?.id || stored?.admin?._id || stored?.user?.id || stored?.admin?.userId;
+        if (idCandidate) {
+          const id = Number(idCandidate);
+          if (Number.isFinite(id)) {
+            try {
+              const data = await AdminService.getAdminById(id);
+              // navegar pasando adminData en state
+              return navigate('/data_update', { state: { adminData: data } });
+            } catch (err) {
+              console.warn('No se pudo obtener admin por id antes de navegar a editar:', err);
+              // fallback al stored
+            }
+          }
+        }
+
+        // fallback: navegar con lo que tengamos en localStorage (puede contener admin o token+admin)
+        return navigate('/data_update', { state: { adminData: stored } });
+      } catch (err) {
+        console.error('Error preparando datos para editar perfil:', err);
+        return navigate('/data_update');
+      }
+    }
+
     if (section === 'documents') return navigate('/personal_documents');
-    if (section === 'password') return navigate('/password_change');
+
+    // admitir tanto 'password' (vía versiones previas) como 'change_password' (ProfileMenu)
+    if (section === 'password' || section === 'change_password') return navigate('/admin_change_password');
+
     if (section === 'logout') {
       AdminService.logout();
       navigate('/admin_login', { replace: true });

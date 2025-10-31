@@ -429,7 +429,7 @@ const styles = {
     cursor: "pointer",
     transition: "transform 150ms ease, box-shadow 180ms ease",
     fontWeight: "700",
-    color: "#2463ebff",
+    color: "#2463eb",
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
   },
 
@@ -438,16 +438,6 @@ const styles = {
     flexDirection: "column",
   },
 
-  welcomeTitle: {
-    fontSize: "2.5rem",
-    fontWeight: "800",
-    color: "#000000ff",
-    margin: "0",
-    background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-    backgroundClip: "text",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-  },
 
   welcomeSubtitle: {
     fontSize: "1.25rem",
@@ -470,7 +460,7 @@ const styles = {
     borderRadius: "12px",
     border: "1px solid #e2e8f0",
     fontWeight: "600",
-    color: "#4f46e5",
+    color: "#2463eb",
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
   },
 
@@ -482,22 +472,23 @@ const styles = {
     border: "1px solid #e2e8f0",
     boxShadow: "0 12px 30px rgba(2,6,23,0.06)",
     padding: "1rem 1rem 1rem 1rem",
-    marginBottom: "2rem",
+    marginBottom: "1rem",
   },
 
   cardHeader: {
     display: "flex",
     alignItems: "center",
     gap: "1rem",
-    marginBottom: "1.5rem",
+    marginBottom: "1rem",
     paddingBottom: "1rem",
     borderBottom: "1px solid #f1f5f9",
+    
   },
 
   cardTitle: {
     fontSize: "1.25rem",
     fontWeight: "700",
-    color: "#1e293b",
+    color: "#000000",
     margin: "0",
     flex: "1",
   },
@@ -587,7 +578,7 @@ const styles = {
   docMetaText: {
     fontSize: "0.85rem",
     color: "#000000ff",
-    fontWeight: "500",
+    fontWeight: "400",
   },
 
   docActions: {
@@ -650,6 +641,7 @@ const styles = {
     border: "1px solid #e2e8f0",
     boxShadow: "0 6px 18px rgba(2,6,23,0.04)",
     transition: "transform 0.18s ease, box-shadow 0.18s ease",
+    marginBottom: "-1rem",
   },
 
   statIcon: {
@@ -670,14 +662,14 @@ const styles = {
   statNumber: {
     fontSize: "1.25rem",
     fontWeight: "700",
-    color: "#1e293b",
+    color: "#000000",
     marginBottom: "0.25rem",
   },
 
   statLabel: {
     fontSize: "0.9rem",
-    color: "#64748b",
-    fontWeight: "500",
+    color: "#000000",
+    fontWeight: "400",
   },
 
   infoCard: {
@@ -712,9 +704,9 @@ const styles = {
 
   infoText: {
     fontSize: "0.9rem",
-    color: "#64748b",
+    color: "#000000",
     margin: "0",
-    fontWeight: "500",
+    fontWeight: "400",
   },
 };
 
