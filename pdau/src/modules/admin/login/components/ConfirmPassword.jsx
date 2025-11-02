@@ -20,7 +20,9 @@ input:-webkit-autofill, input:-webkit-autofill:focus, input:-webkit-autofill:hov
 const ConfirmPassword = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  // Estado separado para cada ojo (nueva y confirmar)
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -48,7 +50,8 @@ const ConfirmPassword = () => {
     };
   }, []);
 
-  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+  const toggleShowNew = () => setShowNewPassword((s) => !s);
+  const toggleShowConfirm = () => setShowConfirmPassword((s) => !s);
 
   const handleFocus = (fieldName) => {
     setFocusedField(fieldName);
@@ -135,7 +138,7 @@ const ConfirmPassword = () => {
             <div style={{ position: 'relative' }}>
               <input
                 id="new-pass"
-                type={showPassword ? 'text' : 'password'}
+                type={showNewPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 style={getInputStyle('new-pass')}
@@ -149,11 +152,11 @@ const ConfirmPassword = () => {
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={togglePasswordVisibility}
+                  onClick={toggleShowNew}
                   style={styles.eyeButton}
-                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  aria-label={showNewPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
-                  {showPassword ? <MdVisibilityOff style={styles.eyeIcon} /> : <MdVisibility style={styles.eyeIcon} />}
+                  {showNewPassword ? <MdVisibilityOff style={styles.eyeIcon} /> : <MdVisibility style={styles.eyeIcon} />}
                 </button>
               )}
             </div>
@@ -165,7 +168,7 @@ const ConfirmPassword = () => {
             <div style={{ position: 'relative' }}>
               <input
                 id="confirm-pass"
-                type={showPassword ? 'text' : 'password'}
+                type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 style={{ ...getInputStyle('confirm-pass'), border: passwordsMismatch ? '2px solid #dc2626' : getInputStyle('confirm-pass').border }}
@@ -179,11 +182,11 @@ const ConfirmPassword = () => {
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={togglePasswordVisibility}
+                  onClick={toggleShowConfirm}
                   style={styles.eyeButton}
-                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
-                  {showPassword ? <MdVisibilityOff style={styles.eyeIcon} /> : <MdVisibility style={styles.eyeIcon} />}
+                  {showConfirmPassword ? <MdVisibilityOff style={styles.eyeIcon} /> : <MdVisibility style={styles.eyeIcon} />}
                 </button>
               )}
             </div>
@@ -213,6 +216,16 @@ const ConfirmPassword = () => {
             <Button text={isLoading ? 'Guardando...' : 'Guardar contraseña'} onClick={handleSubmit} disabled={isLoading} />
           </div>
 
+          <div style={styles.bottomLinks}>
+            <button type="button"
+            onFocus={(e) => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+            onBlur={(e) => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.boxShadow = 'none'; }} 
+            onClick={() => navigate('/admin_login')} 
+            style={styles.linkButton}>
+              Volver a iniciar sesión
+            </button>
+          </div>
+
         </div>
       </div>
       <Modal
@@ -237,7 +250,7 @@ const styles = {
         flexDirection: 'column',
         width: '100%',
         minHeight: '100vh',
-        background: '#f6f8fa',
+    backgroundColor: '#f6f8fa',
     },
 
     container: {
@@ -257,7 +270,7 @@ const styles = {
     card: {
         width: '100%',
         maxWidth: 420,
-        background: '#fff',
+    backgroundColor: '#fff',
         padding: '2rem',
         borderRadius: 16,
         border: '1px solid #e5e7eb',
@@ -291,7 +304,7 @@ const styles = {
         alignItems: 'center',
         gap: 8,
         fontWeight: 600,
-        color: '#374151',
+        color: '#000000',
     },
 
     labelIcon: {
@@ -303,7 +316,7 @@ const styles = {
         padding: '0.85rem 1rem',
         borderRadius: 10,
         border: '2px solid #e5e7eb',
-        background: '#f9fafb',
+    backgroundColor: '#f9fafb',
         boxSizing: 'border-box',
     },
 
@@ -312,15 +325,28 @@ const styles = {
         right: 12,
         top: '50%',
         transform: 'translateY(-50%)',
-        background: 'none',
+    backgroundColor: 'transparent',
         border: 'none',
         cursor: 'pointer',
         padding: 0,
     },
 
+  bottomLinks: {
+    marginTop: 12,
+    display: 'flex',
+    justifyContent: 'center'
+  },
+  linkButton: {
+    background: 'none',
+    border: 'none',
+    color: '#2563eb',
+    cursor: 'pointer',
+    fontWeight: 600
+  },
+
     eyeIcon: {
     fontSize: 20,
-    color: '#6b7280',
+    color: '#2463eb',
     },
 
     buttonWrap: {
