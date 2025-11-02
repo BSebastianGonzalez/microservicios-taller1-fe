@@ -11,7 +11,7 @@ const ChangePassword = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [focusedField, setFocusedField] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
+  
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -35,7 +35,11 @@ const ChangePassword = () => {
     return base;
   };
 
-  const toggleShow = () => setShowPassword((s) => !s);
+  // Separate show states so each eye button toggles its own input
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const toggleShowNew = () => setShowNewPassword((s) => !s);
+  const toggleShowConfirm = () => setShowConfirmPassword((s) => !s);
 
   const handleSubmit = async () => {
     setError('');
@@ -86,7 +90,7 @@ const ChangePassword = () => {
           <div style={{ position: 'relative' }}>
             <input
               id="new-pass"
-              type={showPassword ? 'text' : 'password'}
+              type={showNewPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onFocus={() => handleFocus('new-pass')}
@@ -97,8 +101,8 @@ const ChangePassword = () => {
               disabled={isLoading}
             />
             {(focusedField === 'new-pass' && password.trim().length > 0) && (
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={toggleShow} style={styles.eyeButton} aria-label="Mostrar/ocultar">
-                {showPassword ? <MdVisibilityOff style={styles.eyeIcon} /> : <MdVisibility style={styles.eyeIcon} />}
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={toggleShowNew} style={styles.eyeButton} aria-label="Mostrar/ocultar nueva contraseña">
+                {showNewPassword ? <MdVisibilityOff style={styles.eyeIcon} /> : <MdVisibility style={styles.eyeIcon} />}
               </button>
             )}
           </div>
@@ -109,7 +113,7 @@ const ChangePassword = () => {
           <div style={{ position: 'relative' }}>
             <input
               id="confirm-pass"
-              type={showPassword ? 'text' : 'password'}
+              type={showConfirmPassword ? 'text' : 'password'}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               onFocus={() => handleFocus('confirm-pass')}
@@ -120,8 +124,8 @@ const ChangePassword = () => {
               disabled={isLoading}
             />
             {(focusedField === 'confirm-pass' && confirmPassword.trim().length > 0) && (
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={toggleShow} style={styles.eyeButton} aria-label="Mostrar/ocultar">
-                {showPassword ? <MdVisibilityOff style={styles.eyeIcon} /> : <MdVisibility style={styles.eyeIcon} />}
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={toggleShowConfirm} style={styles.eyeButton} aria-label="Mostrar/ocultar confirmar contraseña">
+                {showConfirmPassword ? <MdVisibilityOff style={styles.eyeIcon} /> : <MdVisibility style={styles.eyeIcon} />}
               </button>
             )}
           </div>
@@ -177,7 +181,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '2rem',
-    background: 'white',
+    backgroundColor: 'white',
     borderRadius: 16,
     border: '1px solid #e2e8f0',
     boxShadow: '0 20px 40px rgba(0,0,0,0.06)',
@@ -217,7 +221,7 @@ const styles = {
     padding: '0.85rem 1rem',
     borderRadius: 10,
     border: '2px solid #e5e7eb',
-    background: '#f9fafb',
+    backgroundColor: '#f9fafb',
   },
   eyeButton: {
     position: 'absolute',

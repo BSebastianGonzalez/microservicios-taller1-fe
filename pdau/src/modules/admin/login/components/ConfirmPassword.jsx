@@ -88,7 +88,8 @@ const ConfirmPassword = () => {
     setModalOpen(true);
     } catch (err) {
       console.error("Error al resetear contraseña:", err);
-      setError(err.message || err?.error || "Error al actualizar la contraseña.");
+      const message = typeof err === 'string' ? err : err?.message || err?.error || 'Error al actualizar la contraseña.';
+      setError(message);
     } finally {
       setIsLoading(false);
     }

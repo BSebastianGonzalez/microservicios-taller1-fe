@@ -74,7 +74,8 @@ const ResetPassword = () => {
       setModalOpen(true);
     } catch (err) {
       console.error("Error al solicitar reset:", err);
-      setError(err.message || err?.error || "Error al solicitar restablecimiento.");
+      const message = typeof err === 'string' ? err : err?.message || err?.error || 'Error al solicitar restablecimiento.';
+      setError(message);
     } finally {
       setIsLoading(false);
     }
