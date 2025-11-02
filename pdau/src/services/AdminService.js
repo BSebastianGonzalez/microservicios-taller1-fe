@@ -29,59 +29,12 @@ const AdminService = {
     return !!admin;
   },
 
-  getCurrentAdmin: async () => {
+  getCurrentAdmin: () => {
     try {
-      const storedData = localStorage.getItem('admin');
-      if (!storedData) {
-        console.log('❌ No hay datos de admin en localStorage');
-        return null;
-      }
-      
-      const adminData = JSON.parse(storedData);
-      console.log('📋 Datos almacenados en localStorage:', adminData);
-      
-      // Verificar si ya tenemos el ID del admin
-      let adminId = null;
-      
-      // Buscar el ID en diferentes posibles ubicaciones
-      if (adminData.admin && adminData.admin.id) {
-        adminId = adminData.admin.id;
-      } else if (adminData.id) {
-        adminId = adminData.id;
-      } else if (adminData.user && adminData.user.id) {
-        adminId = adminData.user.id;
-      }
-      
-      console.log('🆔 ID del admin encontrado:', adminId);
-      
-      // Si tenemos ID, obtener datos completos usando el endpoint /admin/{id}
-      if (adminId) {
-        try {
-          console.log('🔄 Obteniendo datos completos del admin ID:', adminId);
-          const completeAdmin = await AdminService.getAdminById(adminId);
-          
-          // Actualizar localStorage con los datos completos
-          const updatedData = {
-            ...adminData,
-            admin: completeAdmin
-          };
-          localStorage.setItem('admin', JSON.stringify(updatedData));
-          console.log('✅ Datos completos guardados en localStorage');
-          
-          return updatedData;
-        } catch (error) {
-          console.error('❌ Error obteniendo datos completos:', error);
-          // Si falla, retornar los datos que ya tenemos
-          return adminData;
-        }
-      }
-      
-      // Si no tenemos ID, retornar lo que tenemos
-      console.log('⚠️ No se pudo obtener ID del admin, retornando datos básicos');
-      return adminData;
-      
-    } catch (error) {
-      console.error('❌ Error obteniendo admin actual:', error);
+      const stored = localStorage.getItem('admin');
+      if (!stored) return null;
+      return JSON.parse(stored);
+    } catch {
       return null;
     }
   },
@@ -96,16 +49,12 @@ const AdminService = {
     }
   },
 
-getAdminById: async (id) => {
+  getAdminById: async (id) => {
     try {
-      const response = await axios.get(`/api/admin/${id}`);
-      console.log(`📡 Obteniendo admin con ID: ${id}`);
-      const response = await axiosInstance.get(`/api/admin/${id}`);
-      console.log('✅ Datos completos del admin:', response.data);
-      return response.data;
+      const { data } = await axios.get(`/api/admin/${id}`);
+      return data;
     } catch (error) {
-      console.error(`❌ Error al obtener admin ${id}:`, error);
-      throw error.response?.data || { message: 'Error obteniendo administrador' };
+      throw error.response?.data || { message: "Error obteniendo administrador" };
     }
   },
 
@@ -148,11 +97,9 @@ getAdminById: async (id) => {
   // Solicitar restablecimiento de contraseña (envía correo con token)
   requestPasswordReset: async (correo) => {
     try {
-      // Asumimos endpoint POST /auth/forgot-password
       const response = await axios.post('/auth/forgot-password', { correo });
-      return response.data;
+      return { message: response.data };
     } catch (error) {
-      console.error('Error al solicitar restablecimiento de contraseña:', error);
       throw error.response?.data || error;
     }
   },
@@ -160,11 +107,9 @@ getAdminById: async (id) => {
   // Confirmar / resetear contraseña con token
   resetPassword: async (token, nuevaContrasenia) => {
     try {
-      // Asumimos endpoint POST /auth/reset-password
-      const response = await axios.post('/auth/reset-password', { token, nuevaContrasenia });
-      return response.data;
+      const response = await axios.post('/auth/reset-password', { token, newPassword: nuevaContrasenia });
+      return { message: response.data };
     } catch (error) {
-      console.error('Error al resetear la contraseña:', error);
       throw error.response?.data || error;
     }
   },
@@ -181,11 +126,9 @@ getAdminById: async (id) => {
         throw new Error('ID del admin no encontrado en localStorage');
       }
 
-  console.log('Actualizando contraseña del administrador (id oculto en logs)');
-  const res = await axios.put(`/api/admin/${id}`, { contrasenia: nuevaContrasenia });
-  return res.data;
+      const res = await axios.put(`/api/admin/${id}`, { contrasenia: nuevaContrasenia });
+      return res.data;
     } catch (error) {
-      console.error('Error al cambiar la contraseña via /api/admin/{id}:', error);
       throw error.response?.data || error;
     }
   },
