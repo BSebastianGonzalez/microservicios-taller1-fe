@@ -19,13 +19,15 @@
       if (path === "/data") return "Mis datos | PDAU";
       if (path === "/data_update") return "Actualizar datos personales | PDAU";
       if (path === "/personal_documents") return "Documentos personales | PDAU";
+      if (path.startsWith("/admin_change_password")) return "Cambiar Contraseña | PDAU";
 
       if (path === "/read_complaint") return "Denuncias anónimas | PDAU";
       if (path === "/archived_complaints") return "Denuncias anónimas archivadas | PDAU";
       if (path.startsWith("/complaint_checkout")) return "Revisar denuncia | PDAU";
+      if (path.startsWith("/response_registration")) return "Registrar respuesta a denuncia | PDAU";
       if (path.startsWith("/archived_complaint")) return "Revisar denuncia archivada | PDAU";
 
-      if (path.startsWith("/stats")) return "Generar estadísticas | PDAU";
+      if (path.startsWith("/stats")) return "Indicadores de Gestión de Denuncias Anónimas | PDAU";
       if (path.startsWith("/reports/new")) return "Generar reportes | PDAU";
       if (path.startsWith("/reports")) return "Consultar reportes | PDAU";
 
@@ -36,6 +38,7 @@
       if (path.startsWith("/registrar") || path.startsWith("/register") || path === "/complaint") return "Registrar Denuncia | PDAU";
       if (path.startsWith("/legal")) return "Avisos Legales | PDAU";
       if (path.startsWith("/denuncia")) return "Nueva denuncia | PDAU";
+      if (path.startsWith("/statistics_public")) return "Estadísticas de denuncias | PDAU";
 
       // Fallback
       return "PDAU";
