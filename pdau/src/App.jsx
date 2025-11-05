@@ -16,6 +16,7 @@ import AdminPage from './pages/admin/AdminPage';
 import DataPage from './pages/admin/DataPage';
 import LawFrame from './pages/user/LawFrame';
 import ViewLaw from './pages/user/ViewLaw';
+import StatisticsView from './pages/user/StatisticsView';
 import DataUpdatePage from './pages/admin/DataUpdatePage';
 import PersonalDocumentsPage from './pages/admin/PersonalDocumentsPage';
 import ComplaintCheckout from './pages/admin/ComplaintCheckout';
@@ -35,6 +36,7 @@ function App() {
         <Route path="/consult" element={<ComplaintConsult />} />
         <Route path="/consult_response" element={<ConsultResponse />} />
         <Route path="/law_frame" element={<LawFrame />} />
+        <Route path="/statistics" element={<StatisticsView />} />
         <Route path="/:id" element={<ViewLaw />} />
         
         {/* Rutas del administrador */}
