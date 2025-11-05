@@ -36,6 +36,10 @@ const Sidebar = ({ adminData }) => {
       setSelectedSection("Documentos personales");
     else if (p.startsWith("/read_complaint"))
       setSelectedSection("Ver denuncias anónimas");
+    else if (p.startsWith("/complaint_checkout"))
+      setSelectedSection("Ver denuncias anónimas");
+    else if (p.startsWith("/response_registration"))
+      setSelectedSection("Ver denuncias anónimas");
     else if (p.startsWith("/archived_complaints"))
       setSelectedSection("Denuncias archivadas");
     else if (p.startsWith("/stats")) setSelectedSection("Generar estadísticas");
@@ -340,7 +344,7 @@ const styles = {
     top: 0,
     left: 0,
     background:
-      "linear-gradient(180deg, rgba(20,64,170,1) 0%, #2463ebff 45%, rgba(32,78,205,1) 100%)",
+      "linear-gradient(180deg, rgba(20,64,170,1) 0%, #2463ebff 45%, #204ecdff 100%)",
     color: "#fff",
     display: "flex",
     flexDirection: "column",

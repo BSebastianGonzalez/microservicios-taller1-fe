@@ -15,31 +15,22 @@ const ChangeStateModal = ({
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div
-        className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative animate-slide-up"
-        style={{
-          animation: "slideUp 0.4s cubic-bezier(0.4,0,0.2,1)",
-        }}
-      >
+    <div style={styles.overlay}>
+      <div style={styles.modal}>
         <button
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl"
+          style={styles.closeButton}
           onClick={onClose}
           disabled={submitting}
           aria-label="Cerrar"
         >
           &times;
         </button>
-        <h2 className="text-2xl font-bold mb-6 text-center text-black">
-          Cambiar estado de la denuncia
-        </h2>
-        <form onSubmit={onSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="block font-semibold mb-1 text-gray-700">
-              Selecciona el nuevo estado
-            </label>
+        <h2 style={styles.title}>Cambiar estado de la denuncia</h2>
+        <form onSubmit={onSubmit} style={styles.form}>
+          <div style={styles.field}>
+            <label style={styles.label}>Selecciona el nuevo estado</label>
             <select
-              className="w-full border rounded px-3 py-2"
+              style={styles.select}
               value={selectedState}
               onChange={(e) => setSelectedState(e.target.value)}
               required
@@ -53,12 +44,10 @@ const ChangeStateModal = ({
               ))}
             </select>
           </div>
-          <div>
-            <label className="block font-semibold mb-1 text-gray-700">
-              Justificación del cambio
-            </label>
+          <div style={styles.field}>
+            <label style={styles.label}>Justificación del cambio</label>
             <textarea
-              className="w-full border rounded px-3 py-2"
+              style={styles.textarea}
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
               required
@@ -75,25 +64,82 @@ const ChangeStateModal = ({
           />
         </form>
       </div>
-      <style>
-        {`
-          @keyframes slideUp {
-            from {
-              transform: translateY(100px);
-              opacity: 0;
-            }
-            to {
-              transform: translateY(0);
-              opacity: 1;
-            }
-          }
-          .animate-slide-up {
-            animation: slideUp 0.4s cubic-bezier(0.4,0,0.2,1);
-          }
-        `}
-      </style>
     </div>
   );
+};
+
+const styles = {
+  overlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 50,
+    backdropFilter: "blur(4px)",
+  },
+  modal: {
+    backgroundColor: "white",
+    borderRadius: "0.5rem",
+    boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+    padding: "2rem",
+    width: "100%",
+    maxWidth: "28rem",
+    position: "relative",
+    animation: "slideUp 0.4s cubic-bezier(0.4,0,0.2,1)",
+  },
+  closeButton: {
+    position: "absolute",
+    top: "0.5rem",
+    right: "0.5rem",
+    color: "#6b7280",
+    fontSize: "1.5rem",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+  },
+  title: {
+    fontSize: "1.5rem",
+    fontWeight: "bold",
+    marginBottom: "1.5rem",
+    textAlign: "center",
+    color: "#000000",
+  },
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "1rem",
+  },
+  field: {
+    marginBottom: "0.5rem",
+  },
+  label: {
+    display: "block",
+    fontWeight: 600,
+    marginBottom: "0.25rem",
+    color: "#374151",
+  },
+  select: {
+    width: "100%",
+    border: "1px solid #d1d5db",
+    borderRadius: "0.375rem",
+    padding: "0.5rem 0.75rem",
+    fontSize: "1rem",
+  },
+  textarea: {
+    width: "100%",
+    border: "1px solid #d1d5db",
+    borderRadius: "0.375rem",
+    padding: "0.5rem 0.75rem",
+    fontSize: "1rem",
+    resize: "vertical",
+    minHeight: "80px",
+    fontFamily: "inherit",
+  },
 };
 
 export default ChangeStateModal;

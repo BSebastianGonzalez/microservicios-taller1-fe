@@ -28,6 +28,114 @@ const ComplaintsList = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      // DATOS ESTÁTICOS PARA VISUALIZACIÓN
+      const complaintsData = [
+        {
+          id: 1,
+          titulo: "Acoso y hostigamiento dentro del campus",
+          fechaCreacion: "2025-03-25",
+          estado: { id: 2, nombre: "En revisión" },
+          departamento: { id: 1, nombre: "Decanatura de Ciencias" },
+          categorias: [
+            { id: 1, nombre: "Acoso verbal" },
+            { id: 2, nombre: "Acoso físico" }
+          ]
+        },
+        {
+          id: 2,
+          titulo: "Corrupción en la asignación de becas y fondos",
+          fechaCreacion: "2025-03-17",
+          estado: { id: 3, nombre: "Respondida" },
+          departamento: { id: 2, nombre: "Bienestar Universitario" },
+          categorias: [{ id: 4, nombre: "Corrupción" }]
+        },
+        {
+          id: 3,
+          titulo: "Discriminación por parte de personal administrativo",
+          fechaCreacion: "2025-03-10",
+          estado: { id: 1, nombre: "Pendiente" },
+          departamento: { id: 3, nombre: "Recursos Humanos" },
+          categorias: [{ id: 5, nombre: "Discriminación" }]
+        },
+        {
+          id: 4,
+          titulo: "Irregularidades en evaluaciones y calificaciones",
+          fechaCreacion: "2025-03-08",
+          estado: { id: 2, nombre: "En revisión" },
+          departamento: { id: 1, nombre: "Decanatura de Ciencias" },
+          categorias: [{ id: 6, nombre: "Fraude académico" }]
+        },
+        {
+          id: 5,
+          titulo: "Maltrato o abuso de autoridad por docentes",
+          fechaCreacion: "2025-03-07",
+          estado: { id: 2, nombre: "En revisión" },
+          departamento: { id: 4, nombre: "Decanatura de Ingeniería" },
+          categorias: [{ id: 7, nombre: "Abuso de autoridad" }]
+        },
+        {
+          id: 6,
+          titulo: "Venta ilegal de materiales académicos",
+          fechaCreacion: "2025-03-07",
+          estado: { id: 1, nombre: "Pendiente" },
+          departamento: { id: 1, nombre: "Decanatura de Ciencias" },
+          categorias: [{ id: 8, nombre: "Fraude" }]
+        },
+        {
+          id: 7,
+          titulo: "Falta de seguridad en instalaciones universitarias",
+          fechaCreacion: "2025-03-07",
+          estado: { id: 2, nombre: "En revisión" },
+          departamento: { id: 5, nombre: "Infraestructura" },
+          categorias: [{ id: 9, nombre: "Seguridad" }]
+        },
+        {
+          id: 8,
+          titulo: "Nepotismo en contrataciones y ascensos",
+          fechaCreacion: "2025-03-01",
+          estado: { id: 1, nombre: "Pendiente" },
+          departamento: { id: 3, nombre: "Recursos Humanos" },
+          categorias: [{ id: 10, nombre: "Nepotismo" }]
+        }
+      ];
+
+      const categoriesData = [
+        { id: 1, nombre: "Acoso verbal" },
+        { id: 2, nombre: "Acoso físico" },
+        { id: 3, nombre: "Acoso psicológico" },
+        { id: 4, nombre: "Corrupción" },
+        { id: 5, nombre: "Discriminación" },
+        { id: 6, nombre: "Fraude académico" },
+        { id: 7, nombre: "Abuso de autoridad" },
+        { id: 8, nombre: "Fraude" },
+        { id: 9, nombre: "Seguridad" },
+        { id: 10, nombre: "Nepotismo" }
+      ];
+
+      const departamentosData = [
+        { id: 1, nombre: "Decanatura de Ciencias" },
+        { id: 2, nombre: "Bienestar Universitario" },
+        { id: 3, nombre: "Recursos Humanos" },
+        { id: 4, nombre: "Decanatura de Ingeniería" },
+        { id: 5, nombre: "Infraestructura" },
+        { id: 6, nombre: "Rectoría" }
+      ];
+
+      const estadosData = [
+        { id: 1, nombre: "Pendiente" },
+        { id: 2, nombre: "En revisión" },
+        { id: 3, nombre: "Respondida" },
+        { id: 4, nombre: "Archivada" }
+      ];
+
+      setComplaints(complaintsData);
+      setFilteredComplaints(complaintsData);
+      setCategories(categoriesData);
+      setDepartamentos(departamentosData);
+      setEstados(estadosData);
+
+      // CÓDIGO REAL COMENTADO - Descomentar cuando tengas el backend
+      /*
       try {
         const complaintsData = await ComplaintService.getUnarchivedComplaints();
         const categoriesData = await ComplaintService.getAllCategories();
@@ -43,6 +151,7 @@ const ComplaintsList = () => {
       } catch (err) {
         console.error("Error al cargar:", err);
       }
+      */
     };
     fetchData();
   }, []);
@@ -63,8 +172,8 @@ const ComplaintsList = () => {
       let filtered = complaints;
 
       if (selectedDepartamentoId) {
-        filtered = await ComplaintService.getComplaintsByDepartment(
-          selectedDepartamentoId
+        filtered = filtered.filter(
+          (c) => String(c.departamento?.id) === selectedDepartamentoId
         );
       }
       if (selectedCategoryId) {
@@ -121,17 +230,15 @@ const ComplaintsList = () => {
     <div style={styles.page}>
       <style>{`
         @keyframes modalIn { from { opacity:.4; transform: translateY(6px) } to { opacity:1; transform: translateY(0) } }
-        /* Mover el icono del selector de fecha más a la derecha */
         .complaints-date-input::-webkit-calendar-picker-indicator {
           transform: translateX(50px);
         }
-        /* Firefox (puede ignorarse si no aplica) */
         .complaints-date-input::-moz-focus-inner {
           transform: translateX(50px);
         }
       `}</style>
 
-      {/* Botón filtros anclado a la derecha (sticky) */}
+      {/* Botón filtros */}
       <div style={styles.rightDock}>
         <button
           onClick={toggleFilterModal}
@@ -145,7 +252,7 @@ const ComplaintsList = () => {
         </button>
       </div>
 
-      {/* Tabla: ancho completo */}
+      {/* Tabla */}
       <ListContainer
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
@@ -343,7 +450,6 @@ const ComplaintsList = () => {
 
 /* ================== ESTILOS ================== */
 const styles = {
-  // Área de contenido: deja el sidebar (260px) y ocupa todo el ancho restante
   page: {
     width: "100%",
     boxSizing: "border-box",
@@ -353,21 +459,10 @@ const styles = {
     background: "#fff",
   },
 
-  title: {
-    fontFamily: "'Inter','Segoe UI', Arial, sans-serif",
-    fontSize: "3rem",
-    fontWeight: 900,
-    color: "#0f172a",
-    margin: "0 0 1rem 0",
-    textAlign: "center",
-    lineHeight: 1.1,
-  },
-
-  // Dock derecho: botón sticky
   rightDock: {
     alignSelf: "flex-end",
     position: "sticky",
-    top: 18, // se mantiene visible al hacer scroll
+    top: 18,
     zIndex: 5,
     marginBottom: "0.9rem",
   },
@@ -387,7 +482,6 @@ const styles = {
     cursor: "pointer",
   },
 
-  // Wrapper y tabla full width
   tableWrapper: {
     width: "100%",
     border: "1px solid #9ca3af",
@@ -456,7 +550,6 @@ const styles = {
     color: "#6b7280",
   },
 
-  /* ----- Modal ----- */
   backdrop: {
     position: "fixed",
     inset: 0,
@@ -468,6 +561,7 @@ const styles = {
     padding: 16,
     backdropFilter: "blur(2px)",
   },
+
   modal: {
     width: "min(520px, 100%)",
     background: "#fff",
@@ -478,6 +572,7 @@ const styles = {
     transition: "all .2s ease",
     animation: "modalIn .2s ease-out",
   },
+
   modalTitle: {
     margin: 0,
     fontSize: "1.35rem",
@@ -485,16 +580,19 @@ const styles = {
     color: "#0f172a",
     marginBottom: 12,
   },
+
   field: {
     marginBottom: 12,
     display: "flex",
     flexDirection: "column",
     gap: 6,
   },
+
   label: {
     fontWeight: 700,
     color: "#0f172a",
   },
+
   select: {
     width: "100%",
     height: "44px",
@@ -506,7 +604,6 @@ const styles = {
     background: "#fff",
   },
 
-  // Inputs mejorados (palabras clave y fechas)
   keywordInput: {
     width: "100%",
     height: "44px",
@@ -522,10 +619,12 @@ const styles = {
     transition: "border-color .18s ease, box-shadow .18s ease",
     boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
   },
+
   keywordInputFocus: {
     borderColor: "#2563eb",
     boxShadow: "0 0 0 3px rgba(37,99,235,0.15)",
   },
+
   dateInput: {
     width: "100%",
     height: "44px",
@@ -545,6 +644,7 @@ const styles = {
     WebkitAppearance: "none",
     MozAppearance: "textfield",
   },
+
   dateInputFocus: {
     borderColor: "#2563eb",
     boxShadow: "0 0 0 3px rgba(37,99,235,0.15)",
@@ -556,6 +656,7 @@ const styles = {
     justifyContent: "flex-end",
     gap: 10,
   },
+
   btnSecondary: {
     padding: "10px 14px",
     background: "#f1f5f9",
@@ -564,6 +665,7 @@ const styles = {
     fontWeight: 700,
     cursor: "pointer",
   },
+
   btnPrimary: {
     padding: "10px 14px",
     background: "linear-gradient(90deg, #2563eb 0%, #1e40af 100%)",

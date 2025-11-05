@@ -81,6 +81,8 @@ const Header = () => {
       '/data_update': 'Editar Perfil',
       '/personal_documents': 'Mis documentos personales',
       '/read_complaint': 'Denuncias Anónimas',
+      '/complaint_checkout': 'Revisión de Denuncia',
+      '/response_registration': 'Registrar Respuesta a Denuncia',
       '/archived_complaints': 'Denuncias Archivadas',
       '/stats': 'Estadísticas',
       '/reports': 'Reportes',
@@ -235,7 +237,7 @@ const styles = {
     pageTitle: { 
       fontSize: '1.8rem', 
       fontWeight: '700', 
-      color: '#1f2937',
+      color: '#000000',
       margin: 0,
     },
     pageSubtitle: {

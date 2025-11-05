@@ -9,7 +9,6 @@ const CommentSection = ({ complaintId, adminId }) => {
   const [enviando, setEnviando] = useState(false);
   const sectionRef = useRef(null);
 
-  // Cargar comentarios al abrir la sección
   useEffect(() => {
     if (open) {
       fetchComentarios();
@@ -41,7 +40,6 @@ const CommentSection = ({ complaintId, adminId }) => {
       });
       setNuevoComentario("");
       await fetchComentarios();
-      // Desplaza hacia abajo al agregar comentario
       setTimeout(() => {
         if (sectionRef.current) {
           sectionRef.current.scrollTop = sectionRef.current.scrollHeight;
@@ -55,18 +53,21 @@ const CommentSection = ({ complaintId, adminId }) => {
   };
 
   return (
-    <div className="my-6">
+    <div style={styles.container}>
       <button
-        className="flex items-center gap-2 font-bold text-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded transition-all"
+        style={styles.toggleButton}
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
       >
         <span>
           {open ? "Ocultar comentarios" : "Ver comentarios"}
         </span>
-        <span className="text-blue-600">({comentarios.length})</span>
+        <span style={styles.commentCount}>({comentarios.length})</span>
         <svg
-          className={`w-5 h-5 ml-1 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+          style={{
+            ...styles.arrowIcon,
+            transform: open ? "rotate(180deg)" : "rotate(0deg)"
+          }}
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -76,49 +77,56 @@ const CommentSection = ({ complaintId, adminId }) => {
         </svg>
       </button>
       <div
-        className={`overflow-hidden transition-all duration-500 ${open ? "max-h-[600px] opacity-100 mt-4" : "max-h-0 opacity-0 mt-0"}`}
-        style={{ transitionProperty: "all" }}
+        style={{
+          ...styles.content,
+          maxHeight: open ? "600px" : "0px",
+          opacity: open ? 1 : 0,
+          marginTop: open ? "1rem" : "0px"
+        }}
       >
         <div
           ref={sectionRef}
-          className="bg-white border rounded-lg shadow p-4 max-h-72 overflow-y-auto transition-all"
+          style={styles.commentsList}
         >
           {loading ? (
-            <div className="text-center text-gray-500 py-8">Cargando comentarios...</div>
+            <div style={styles.loadingText}>Cargando comentarios...</div>
           ) : comentarios.length === 0 ? (
-            <div className="text-center text-gray-400 py-8">No hay comentarios aún.</div>
+            <div style={styles.emptyText}>No hay comentarios aún.</div>
           ) : (
             comentarios.map((comentario) => (
-              <div key={comentario.id} className="mb-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-blue-700">{comentario.admin?.nombre || "Administrador"}</span>
-                  <span className="text-xs text-gray-400">
+              <div key={comentario.id} style={styles.commentItem}>
+                <div style={styles.commentHeader}>
+                  <span style={styles.adminName}>{comentario.admin?.nombre || "Administrador"}</span>
+                  <span style={styles.commentDate}>
                     {comentario.fechaComentario
                       ? new Date(comentario.fechaComentario).toLocaleString()
                       : ""}
                   </span>
                 </div>
-                <div className="bg-gray-100 rounded px-3 py-2">{comentario.comentario}</div>
+                <div style={styles.commentText}>{comentario.comentario}</div>
               </div>
             ))
           )}
         </div>
         <form
           onSubmit={handleEnviarComentario}
-          className="flex gap-2 mt-4"
+          style={styles.form}
         >
           <input
             type="text"
             value={nuevoComentario}
             onChange={(e) => setNuevoComentario(e.target.value)}
             placeholder="Escribe un comentario..."
-            className="flex-1 border rounded px-3 py-2"
+            style={styles.input}
             disabled={enviando}
             maxLength={500}
           />
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-800 text-white px-4 py-2 rounded font-bold transition"
+            style={{
+              ...styles.submitButton,
+              opacity: (enviando || !nuevoComentario.trim()) ? 0.6 : 1
+            }}
             disabled={enviando || !nuevoComentario.trim()}
           >
             {enviando ? "Enviando..." : "Comentar"}
@@ -127,6 +135,104 @@ const CommentSection = ({ complaintId, adminId }) => {
       </div>
     </div>
   );
+};
+
+const styles = {
+  container: {
+    margin: "1.5rem 0",
+  },
+  toggleButton: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    fontWeight: "bold",
+    fontSize: "1.125rem",
+    backgroundColor: "#e5e7eb",
+    color: "#000000",
+    padding: "0.5rem 1rem",
+    borderRadius: "0.375rem",
+    border: "none",
+    cursor: "pointer",
+    transition: "background-color 0.2s",
+  },
+  commentCount: {
+    color: "#2563eb",
+  },
+  arrowIcon: {
+    width: "1.25rem",
+    height: "1.25rem",
+    marginLeft: "0.25rem",
+    transition: "transform 0.3s",
+  },
+  content: {
+    overflow: "hidden",
+    transition: "all 0.5s ease",
+  },
+  commentsList: {
+    backgroundColor: "white",
+    border: "1px solid #e5e7eb",
+    borderRadius: "0.5rem",
+    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+    padding: "1rem",
+    maxHeight: "18rem",
+    overflowY: "auto",
+    transition: "all 0.3s ease",
+  },
+  loadingText: {
+    textAlign: "center",
+    color: "#6b7280",
+    padding: "2rem 0",
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#9ca3af",
+    padding: "2rem 0",
+  },
+  commentItem: {
+    marginBottom: "1rem",
+  },
+  commentHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    marginBottom: "0.25rem",
+  },
+  adminName: {
+    fontWeight: 600,
+    color: "#1d4ed8",
+  },
+  commentDate: {
+    fontSize: "0.75rem",
+    color: "#9ca3af",
+  },
+  commentText: {
+    backgroundColor: "#f3f4f6",
+    borderRadius: "0.375rem",
+    padding: "0.5rem 0.75rem",
+    color: "#000000",
+  },
+  form: {
+    display: "flex",
+    gap: "0.5rem",
+    marginTop: "1rem",
+  },
+  input: {
+    flex: 1,
+    border: "1px solid #d1d5db",
+    borderRadius: "0.375rem",
+    padding: "0.5rem 0.75rem",
+    fontSize: "1rem",
+  },
+  submitButton: {
+    backgroundColor: "#2563eb",
+    color: "white",
+    padding: "0.5rem 1rem",
+    borderRadius: "0.375rem",
+    fontWeight: "bold",
+    border: "none",
+    cursor: "pointer",
+    transition: "background-color 0.2s, opacity 0.2s",
+  },
 };
 
 export default CommentSection;
