@@ -42,7 +42,9 @@ const Sidebar = ({ adminData }) => {
       setSelectedSection("Ver denuncias anónimas");
     else if (p.startsWith("/archived_complaints"))
       setSelectedSection("Denuncias archivadas");
-    else if (p.startsWith("/stats")) setSelectedSection("Generar estadísticas");
+    else if (p.startsWith("/stats")) 
+      setSelectedSection("Generar indicadores de gestión");
+    else if (p.startsWith("/statistics")) setSelectedSection("Generar estadísticas");
     else if (p.startsWith("/reports/new"))
       setSelectedSection("Generar reportes");
     else if (p.startsWith("/reports")) setSelectedSection("Consultar reportes");
@@ -238,18 +240,68 @@ const Sidebar = ({ adminData }) => {
           </div>
         </div>
 
-        {/* Generar estadísticas */}
-        <div
-          style={getMenuItemStyle(
-            "stats",
-            selectedSection === "Generar estadísticas"
-          )}
-          onMouseEnter={() => setHoverId("stats")}
-          onMouseLeave={() => setHoverId(null)}
-          onClick={() => go("/stats", "Generar estadísticas")}
-        >
-          <FiBarChart2 style={styles.icon} />
-          <span style={styles.menuText}>Generar estadísticas</span>
+        {/* NUEVO: Estadísticas con submenú */}
+        <div style={styles.menuGroup} ref={reportesRef}>
+          <div
+            style={getMenuItemStyle(
+              "estadisticas",
+              openDropdown === "estadisticas" ||
+                selectedSection === "Generar indicadores de gestión" ||
+                selectedSection === "Generar estadísticas"
+            )}
+            onMouseEnter={() => setHoverId("estadisticas")}
+            onMouseLeave={() => setHoverId(null)}
+            onClick={() =>
+              setOpenDropdown(openDropdown === "estadisticas" ? null : "estadisticas")
+            }
+          >
+            <FiBarChart2 style={styles.icon} />
+            <span style={styles.menuText}>Estadísticas</span>
+            <FiChevronDown
+              style={{
+                ...styles.dropdownArrow,
+                transform:
+                  openDropdown === "estadisticas"
+                    ? "rotate(180deg)"
+                    : "rotate(0deg)",
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              ...styles.dropdownPanel,
+              ...(openDropdown === "estadisticas" ? styles.dropdownPanelOpen : {}),
+            }}
+          >
+            <div
+              style={getDropdownItemStyle(
+                "indicadores",
+                selectedSection === "Generar indicadores de gestión",
+                false
+              )}
+              onMouseEnter={() => setHoverId("indicadores")}
+              onMouseLeave={() => setHoverId(null)}
+              onClick={() => go("/stats", "Generar indicadores de gestión")}
+            >
+              <FiChevronRight style={styles.chevIcon} />
+              <span style={styles.dropdownText}>Generar indicadores de gestión</span>
+            </div>
+
+            <div
+              style={getDropdownItemStyle(
+                "estadisticas-gen",
+                selectedSection === "Generar estadísticas",
+                false
+              )}
+              onMouseEnter={() => setHoverId("estadisticas-gen")}
+              onMouseLeave={() => setHoverId(null)}
+              onClick={() => go("/statistics", "Generar estadísticas")}
+            >
+              <FiChevronRight style={styles.chevIcon} />
+              <span style={styles.dropdownText}>Generar estadísticas</span>
+            </div>
+          </div>
         </div>
 
         {/* Reportes */}

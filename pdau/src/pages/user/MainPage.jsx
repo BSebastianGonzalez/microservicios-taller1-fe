@@ -114,7 +114,7 @@ const MainPage = () => {
             </div>
 
             <div style={responsiveStyles.card}>
-              <Link to="/statistics" style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+              <Link to="/statistics_public" style={{ width: "100%", display: "flex", justifyContent: "center" }}>
                 <HomeButton
                 text="Ver Estadísticas"
                 imageSrc="img/statistics.png"

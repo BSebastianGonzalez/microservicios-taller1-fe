@@ -21,6 +21,7 @@ import DataUpdatePage from './pages/admin/DataUpdatePage';
 import PersonalDocumentsPage from './pages/admin/PersonalDocumentsPage';
 import ComplaintCheckout from './pages/admin/ComplaintCheckout';
 import ResponseRegistrationPage from "./pages/admin/Responseregistrationpage";
+import ManagementIndicatorsPage from './pages/admin/ManagementIndicatorsPage';
 import ArchivedData from './modules/admin/components/archived_complaint/ArchivedSection';
 import { Route, Routes, BrowserRouter } from 'react-router-dom'
 
@@ -36,7 +37,7 @@ function App() {
         <Route path="/consult" element={<ComplaintConsult />} />
         <Route path="/consult_response" element={<ConsultResponse />} />
         <Route path="/law_frame" element={<LawFrame />} />
-        <Route path="/statistics" element={<StatisticsView />} />
+        <Route path="/statistics_public" element={<StatisticsView />} />
         <Route path="/:id" element={<ViewLaw />} />
         
         {/* Rutas del administrador */}
@@ -51,6 +52,7 @@ function App() {
         <Route path="/read_complaint" element={<ViewComplaints />} />
         <Route path="/archived_complaints" element={<ViewArchivedComplaints />} />
         <Route path="/complaint_checkout" element={<ComplaintCheckout />} />
+        <Route path="/stats" element={<ManagementIndicatorsPage />} />
         <Route path="/response_registration" element={<ResponseRegistrationPage />} />
         <Route path="/archived_complaint" element={<ArchivedData />} />
       </Routes>
