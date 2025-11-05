@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import ComplaintService from "../../../services/ComplaintService";
-import ResponseService from "../../../services/Responseservice";
+import ResponseService from "../../../services/ResponseService";
 import Button from "../../../components/Button";
 
 const ResponseRegistration = () => {
