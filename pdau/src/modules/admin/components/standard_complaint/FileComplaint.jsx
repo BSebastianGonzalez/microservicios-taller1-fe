@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import FileComplaintService from "../../../../services/FileComplaintService";
-import Button from "../../../../components/Button";
 
 const FileComplaintModal = ({
   show,
@@ -34,33 +33,30 @@ const FileComplaintModal = ({
       setSubmitting(false);
       onSuccess && onSuccess();
       onClose();
-    } catch (err) {
-      setError("Ocurrió un error al archivar la denuncia.");
-      setSubmitting(false);
-    }
+    } catch (error) {
+        console.error(error);
+        setError("Ocurrió un error al archivar la denuncia.");
+        setSubmitting(false);
+      }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative animate-slide-up">
+    <div style={styles.backdrop}>
+      <div style={styles.modal}>
         <button
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl"
+          style={styles.closeBtn}
           onClick={onClose}
           disabled={submitting}
           aria-label="Cerrar"
         >
           &times;
         </button>
-        <h2 className="text-2xl font-bold mb-6 text-center text-black">
-          Archivar denuncia
-        </h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <h2 style={styles.title}>Archivar denuncia</h2>
+        <form onSubmit={handleSubmit} style={styles.form}>
           <div>
-            <label className="block font-semibold mb-1 text-gray-700">
-              Justificación para archivar
-            </label>
+            <label style={styles.label}>Justificación para archivar</label>
             <textarea
-              className="w-full border rounded px-3 py-2"
+              style={styles.textarea}
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
               required
@@ -69,36 +65,116 @@ const FileComplaintModal = ({
               placeholder="Explica la razón para archivar la denuncia"
             />
           </div>
-          {error && (
-            <div className="text-red-600 text-sm font-semibold">{error}</div>
-          )}
-          <Button
-            text={submitting ? "Archivando..." : "Archivar denuncia"}
-            className="bg-red-600 hover:bg-red-700 text-white w-full py-3 text-lg rounded-lg mt-2"
+          {error && <div style={styles.error}>{error}</div>}
+          <button
             type="submit"
             disabled={submitting}
-          />
+            style={styles.submitBtn}
+            aria-label="Archivar denuncia"
+          >
+            {submitting ? "Archivando..." : "Archivar denuncia"}
+          </button>
         </form>
       </div>
-      <style>
-        {`
-          @keyframes slideUp {
-            from {
-              transform: translateY(100px);
-              opacity: 0;
-            }
-            to {
-              transform: translateY(0);
-              opacity: 1;
-            }
-          }
-          .animate-slide-up {
-            animation: slideUp 0.4s cubic-bezier(0.4,0,0.2,1);
-          }
-        `}
-      </style>
+      <style>{cssStyles}</style>
     </div>
   );
+};
+
+
+const cssStyles = `
+  @keyframes slideUp {
+    from {
+      transform: translateY(100px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  .animate-slide-up {
+    animation: slideUp 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+`;
+
+const styles = {
+  backdrop: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 50,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.4)",
+    backdropFilter: "blur(4px)",
+  },
+  modal: {
+    backgroundColor: "#ffffff",
+    borderRadius: "0.5rem",
+    boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)",
+    padding: "2rem",
+    width: "100%",
+    maxWidth: "28rem",
+    position: "relative",
+    animation: "slideUp 0.4s cubic-bezier(0.4,0,0.2,1)",
+  },
+  closeBtn: {
+    position: "absolute",
+    top: "0.5rem",
+    right: "0.5rem",
+    color: "#6b7280",
+    fontSize: "1.5rem",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+  },
+  title: {
+    fontSize: "1.5rem",
+    fontWeight: 700,
+    marginBottom: "1.5rem",
+    textAlign: "center",
+    color: "#000",
+  },
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "1rem",
+  },
+  label: {
+    display: "block",
+    fontWeight: 600,
+    marginBottom: "0.25rem",
+    color: "#374151",
+  },
+  textarea: {
+    width: "100%",
+    border: "1px solid #d1d5db",
+    borderRadius: "0.375rem",
+    padding: "0.5rem 0.75rem",
+    fontSize: "1rem",
+    resize: "vertical",
+  },
+  error: {
+    color: "#dc2626",
+    fontSize: "0.875rem",
+    fontWeight: 600,
+  },
+  submitBtn: {
+    display: "block",
+    width: "100%",
+    padding: "0.75rem",
+    fontSize: "1.0625rem",
+    borderRadius: "0.5rem",
+    backgroundColor: "#dc2626",
+    color: "#fff",
+    border: "none",
+    cursor: "pointer",
+    marginTop: "0.5rem",
+  },
 };
 
 export default FileComplaintModal;

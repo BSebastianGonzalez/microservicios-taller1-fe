@@ -10,58 +10,69 @@ const ComplaintMainInfo = ({
   onDepartamentoChange,
   onRemitir,
 }) => {
-  const navigate = useNavigate(); // <-- Esto es lo que faltaba
+  const navigate = useNavigate();
 
   return (
-    <div className="flex-1">
-      <h1 className="text-5xl font-bold mb-8 text-center">
-        Revision de denuncia anonima
-      </h1>
-      <div className="flex flex-col gap-6">
+    <div style={styles.container}>
+      <div style={styles.formContainer}>
+        {/* Botón para volver */}
+        <div style={styles.backButtonContainer}>
+          <button
+            onClick={() => navigate("/read_complaint")}
+            style={styles.backButton}
+          >
+            <svg
+              style={styles.backIcon}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            Volver a la lista de denuncias
+          </button>
+        </div>
         {/* Título */}
-        <div className="flex items-center gap-4">
-          <span className="bg-black text-white px-6 py-3 rounded font-bold text-lg w-[200px] min-w-[200px] text-center">
-            Título
-          </span>
+        <div style={styles.fieldRow}>
+          <span style={styles.label}>Título</span>
           <input
             type="text"
             value={complaint.titulo}
             readOnly
-            className="flex-1 border px-3 py-2 rounded"
+            style={styles.input}
           />
         </div>
         {/* Descripción */}
-        <div className="flex items-center gap-4">
-          <span className="bg-black text-white px-5 py-3 rounded font-bold text-lg w-[200px] min-w-[200px] text-center">
-            Descripción
-          </span>
+        <div style={styles.fieldRow}>
+          <span style={styles.label}>Descripción</span>
           <textarea
             value={complaint.descripcion}
             readOnly
-            className="flex-1 border px-3 py-2 rounded h-32 resize-none"
+            style={styles.textarea}
           />
         </div>
         {/* Departamento actual */}
         {complaint.departamento && (
-          <div className="flex items-center gap-4">
-            <span className="bg-black text-white px-5 py-3 rounded font-bold text-lg w-[200px] min-w-[200px] text-center">
-              Departamento actual
-            </span>
+          <div style={styles.fieldRow}>
+            <span style={styles.label}>Departamento actual</span>
             <input
               type="text"
               value={complaint.departamento.nombre}
               readOnly
-              className="flex-1 border px-3 py-2 rounded bg-gray-100"
+              style={styles.disabledInput}
             />
           </div>
         )}
         {/* Remitir a departamento */}
-        <form onSubmit={onRemitir} className="flex items-center gap-4">
-          <span className="bg-black text-white px-5 py-3 rounded font-bold text-lg w-[200px] min-w-[200px] text-center">
-            Remitir a departamento
-          </span>
+        <form onSubmit={onRemitir} style={styles.fieldRow}>
+          <span style={styles.label}>Remitir a departamento</span>
           <select
-            className="flex-1 border px-3 py-2 rounded"
+            style={styles.select}
             value={selectedDepartamento}
             onChange={(e) => onDepartamentoChange(e.target.value)}
             required
@@ -81,31 +92,103 @@ const ComplaintMainInfo = ({
             disabled={assigningDept}
           />
         </form>
-        {/* Botón para volver */}
-        <div className="w-full mb-4">
-          <button
-            onClick={() => navigate("/read_complaint")}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-black rounded-lg shadow hover:bg-gray-300 font-semibold transition"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Volver a la lista de denuncias
-          </button>
-        </div>
+        
       </div>
     </div>
   );
+};
+
+const styles = {
+  container: {
+    flex: 1,
+  },
+  title: {
+    fontSize: "2.5rem",
+    fontWeight: "bold",
+    marginBottom: "2rem",
+    textAlign: "center",
+    color: "#000000",
+    textTransform: "uppercase",
+  },
+  formContainer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "1.5rem",
+  },
+  fieldRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "1rem",
+  },
+  label: {
+    backgroundColor: "#c7c7c7ff",
+    color: "black",
+    padding: "0.75rem 1.5rem",
+    borderRadius: "0.375rem",
+    fontWeight: "bold",
+    fontSize: "1.125rem",
+    width: "200px",
+    minWidth: "200px",
+    textAlign: "center",
+  },
+  input: {
+    flex: 1,
+    border: "1px solid #d1d5db",
+    borderRadius: "0.375rem",
+    padding: "0.5rem 0.75rem",
+    fontSize: "1rem",
+    backgroundColor: "#f9fafb",
+  },
+  textarea: {
+    flex: 1,
+    border: "1px solid #d1d5db",
+    borderRadius: "0.375rem",
+    padding: "0.5rem 0.75rem",
+    fontSize: "1rem",
+    height: "8rem",
+    resize: "none",
+    fontFamily: "inherit",
+    backgroundColor: "#f9fafb",
+  },
+  disabledInput: {
+    flex: 1,
+    border: "1px solid #d1d5db",
+    borderRadius: "0.375rem",
+    padding: "0.5rem 0.75rem",
+    fontSize: "1rem",
+    backgroundColor: "#e5e7eb",
+    color: "#6b7280",
+  },
+  select: {
+    flex: 1,
+    border: "1px solid #d1d5db",
+    borderRadius: "0.375rem",
+    padding: "0.5rem 0.75rem",
+    fontSize: "1rem",
+  },
+  backButtonContainer: {
+    width: "100%",
+    marginTop: "1rem",
+  },
+  backButton: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    padding: "0.75rem 1.5rem",
+    background: "white",
+    borderRadius: "12px",
+    border: "1px solid #e2e8f0",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    fontWeight: "600",
+    color: "#2463eb",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+    marginTop: "-1rem",
+  },
+  backIcon: {
+    width: "1.25rem",
+    height: "1.25rem",
+  },
 };
 
 export default ComplaintMainInfo;

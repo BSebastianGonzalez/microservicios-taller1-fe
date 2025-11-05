@@ -1,43 +1,110 @@
-const SidebarFiles = ({ files }) => (
-  <div className="bg-gray-900 text-white rounded-lg p-4 shadow flex flex-col items-center">
-    <div className="font-bold mb-3 bg-gray-900 text-white px-4 py-2 rounded text-center">
-      Archivos de evidencia
-    </div>
-    {files.length > 0 ? (
-      <ul className="space-y-2 w-full">
-        {files.map((file) => {
-          const name = (file.nombreArchivo || file.urlArchivo || "").toLowerCase();
-          let icon = "/img/document.png";
-          if (/\.(jpg|jpeg|png|gif|bmp|webp|tif|tiff|ico|svg)$/.test(name)) {
-            icon = "/img/photo.png";
-          } else if (/\.(mp4|webm|ogv|ogg|mov|flv|m3u8|3gp)$/.test(name)) {
-            icon = "/img/video.png";
-          } else if (/\.(mp3|wav|aac)$/.test(name)) {
-            icon = "/img/audio.png";
-          }
-          return (
+import React from "react";
+
+const SidebarFiles = ({ files }) => {
+  const getFileIcon = (fileName) => {
+    const name = (fileName || "").toLowerCase();
+    if (/\.(jpg|jpeg|png|gif|bmp|webp|tif|tiff|ico|svg)$/.test(name)) {
+      return "/img/photo.png";
+    } else if (/\.(mp4|webm|ogv|ogg|mov|flv|m3u8|3gp)$/.test(name)) {
+      return "/img/video.png";
+    } else if (/\.(mp3|wav|aac)$/.test(name)) {
+      return "/img/audio.png";
+    }
+    return "/img/document.png";
+  };
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.title}>Archivos de evidencia</div>
+      {files.length > 0 ? (
+        <ul style={styles.filesList}>
+          {files.map((file) => (
             <li
               key={file.id}
-              className="flex items-center gap-3 bg-gray-300 rounded px-2 py-2 shadow-sm hover:bg-gray-200 transition"
+              style={styles.fileItem}
             >
-              <img src={icon} alt="Archivo" className="w-6 h-6" />
+              <img 
+                src={getFileIcon(file.nombreArchivo || file.urlArchivo)} 
+                alt="Archivo" 
+                style={styles.fileIcon} 
+              />
               <a
                 href={file.urlArchivo || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-900 font-medium hover:underline break-all"
+                style={styles.fileLink}
                 title={file.nombreArchivo || file.urlArchivo}
               >
                 {file.nombreArchivo || file.urlArchivo}
               </a>
             </li>
-          );
-        })}
-      </ul>
-    ) : (
-      <span className="text-gray-300">No hay archivos</span>
-    )}
-  </div>
-);
+          ))}
+        </ul>
+      ) : (
+        <span style={styles.noFiles}>No hay archivos</span>
+      )}
+    </div>
+  );
+};
+
+const styles = {
+  container: {
+    backgroundColor: "#d1d5db",
+    color: "white",
+    borderRadius: "0.5rem",
+    padding: "1rem",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  },
+  title: {
+    fontWeight: "bold",
+    marginBottom: "0.75rem",
+    backgroundColor: "#2463eb",
+    color: "white",
+    padding: "0.5rem 1rem",
+    borderRadius: "0.25rem",
+    textAlign: "center",
+    width: "100%",
+  },
+  filesList: {
+    width: "100%",
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.5rem",
+    listStyle: "none",
+    padding: 0,
+    margin: 0,
+  },
+  fileItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.75rem",
+    backgroundColor: "#ffffffff",
+    borderRadius: "0.25rem",
+    padding: "0.5rem",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+    transition: "background-color 0.2s",
+  },
+  fileIcon: {
+    width: "1.5rem",
+    height: "1.5rem",
+    flexShrink: 0,
+  },
+  fileLink: {
+    color: "#1e3a8a",
+    fontWeight: 500,
+    textDecoration: "none",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    flex: 1,
+  },
+  noFiles: {
+    color: "#d1d5db",
+    fontStyle: "italic",
+  },
+};
 
 export default SidebarFiles;
