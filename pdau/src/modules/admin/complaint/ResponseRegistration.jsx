@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import ComplaintService from "../../../services/ComplaintService";
 import ResponseService from "../../../services/ResponseService";
 import Button from "../../../components/Button";
+import Modal from "../../../components/Modal";
 
 const ResponseRegistration = () => {
   const navigate = useNavigate();
@@ -12,6 +13,17 @@ const ResponseRegistration = () => {
   const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [modal, setModal] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+    onConfirm: null,
+    confirmText: "Aceptar",
+    cancelText: null,
+    onCancel: null,
+  });
 
   const [responseData, setResponseData] = useState({
     detalleRespuesta: "",
@@ -30,58 +42,79 @@ const ResponseRegistration = () => {
 
   useEffect(() => {
     const fetchComplaint = async () => {
-      // DATOS ESTÁTICOS PARA VISUALIZACIÓN
-      const datosEstaticos = {
-        id: 1,
-        titulo: "Acoso y hostigamiento dentro del campus",
-        descripcion: "Se han presentado situaciones de acoso verbal y físico por parte de un profesor hacia varios estudiantes dentro de la facultad.",
-        fechaCreacion: "2025-03-25T10:30:00",
-        estado: { id: 2, nombre: "En revisión" },
-        departamento: { id: 1, nombre: "Decanatura de Ciencias" }
-      };
-
-      // Simular delay de carga
-      setTimeout(() => {
-        setComplaint(datosEstaticos);
-        setLoading(false);
-      }, 500);
-
-      // CÓDIGO REAL COMENTADO - Descomentar cuando tengas el backend
-      /*
       if (!complaintId) {
-        navigate("/read_complaint");
+        setModal({
+          open: true,
+          type: "error",
+          title: "Denuncia no encontrada",
+          message: "No se encontró el ID de la denuncia. Regrese a la lista de denuncias.",
+          onConfirm: () => navigate("/read_complaint"),
+          confirmText: "Ir a denuncias",
+        });
         return;
       }
+
       try {
+        setLoading(true);
+        console.log("🔍 Obteniendo datos reales de la denuncia ID:", complaintId);
+        
         const data = await ComplaintService.getComplaintById(complaintId);
+        console.log("✅ Datos reales de denuncia recibidos:", data);
+        
         setComplaint(data);
       } catch (error) {
-        console.error("Error al cargar denuncia:", error);
-        alert("Error al cargar la denuncia");
-        navigate("/read_complaint");
+        console.error("❌ Error al cargar denuncia:", error);
+        setModal({
+          open: true,
+          type: "error",
+          title: "Error al cargar denuncia",
+          message: "No se pudo cargar la información de la denuncia. Por favor, intente nuevamente.",
+          onConfirm: () => navigate("/read_complaint"),
+          confirmText: "Volver a denuncias",
+        });
       } finally {
         setLoading(false);
       }
-      */
     };
+    
     fetchComplaint();
   }, [complaintId, navigate]);
 
   const handleFileUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const newFiles = files.map((file, idx) => ({
-      id: Date.now() + idx,
-      file: file,
-      nombre: file.name,
-      tipo: file.type,
-      tamaño: (file.size / 1024).toFixed(2) + " KB"
-    }));
-    
-    setResponseData(prev => ({
-      ...prev,
-      documentosSoporte: [...prev.documentosSoporte, ...newFiles]
-    }));
-  };
+  const files = Array.from(e.target.files);
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+  
+  const validFiles = files.filter(file => {
+    if (file.size > MAX_FILE_SIZE) {
+      setModal({
+        open: true,
+        type: "error",
+        title: "Archivo demasiado grande",
+        message: `El archivo "${file.name}" es demasiado grande (${(file.size / 1024 / 1024).toFixed(2)} MB). Tamaño máximo permitido: 2MB`,
+        onConfirm: null,
+        confirmText: "Cerrar",
+      });
+      return false;
+    }
+    return true;
+  });
+
+  const newFiles = validFiles.map((file, idx) => ({
+    id: Date.now() + idx,
+    file: file,
+    nombre: file.name,
+    tipo: file.type,
+    tamaño: (file.size / 1024 / 1024).toFixed(2) + " MB"
+  }));
+  
+  setResponseData(prev => ({
+    ...prev,
+    documentosSoporte: [...prev.documentosSoporte, ...newFiles]
+  }));
+  
+  // Limpiar el input file para permitir seleccionar el mismo archivo otra vez
+  e.target.value = '';
+};
 
   const removeFile = (fileId) => {
     setResponseData(prev => ({
@@ -94,43 +127,54 @@ const ResponseRegistration = () => {
     e.preventDefault();
     
     if (!responseData.detalleRespuesta.trim()) {
-      alert("Por favor ingrese el detalle de la respuesta");
+      setModal({
+        open: true,
+        type: "error",
+        title: "Detalle faltante",
+        message: "Por favor ingrese el detalle de la respuesta.",
+        onConfirm: null,
+        confirmText: "Cerrar",
+      });
       return;
     }
 
     if (!adminId) {
-      alert("No se pudo obtener el ID del administrador");
+      setModal({
+        open: true,
+        type: "error",
+        title: "Administrador no encontrado",
+        message: "No se pudo obtener el ID del administrador. Por favor inicie sesión de nuevo.",
+        onConfirm: null,
+        confirmText: "Cerrar",
+      });
+      return;
+    }
+
+    if (!complaintId) {
+      setModal({
+        open: true,
+        type: "error",
+        title: "Denuncia no encontrada",
+        message: "No se encontró el ID de la denuncia. Regrese a la lista de denuncias.",
+        onConfirm: () => navigate("/read_complaint"),
+        confirmText: "Ir a denuncias",
+      });
       return;
     }
 
     setSaving(true);
-    
-    // SIMULACIÓN CON DATOS ESTÁTICOS
-    setTimeout(() => {
-      console.log("Respuesta registrada (datos estáticos):", {
+
+    try {
+      console.log('🔧 URL del backend:', import.meta.env.VITE_API_URL);
+      console.log('📤 Datos a enviar:', {
         idDenuncia: complaintId,
         idAdministrador: adminId,
         detalleRespuesta: responseData.detalleRespuesta,
         diasApelacion: responseData.diasApelacion,
-        documentosSoporte: responseData.documentosSoporte.map(d => d.nombre),
-        fechaRespuesta: new Date().toISOString(),
-        nuevoEstado: "Respondida"
+        documentosCount: responseData.documentosSoporte?.length || 0
       });
 
-      setSaving(false);
-      alert("¡Respuesta registrada exitosamente! (Simulación)");
-      navigate("/complaint_checkout", { 
-        state: { 
-          complaintId,
-          responseRegistered: true 
-        } 
-      });
-    }, 1500);
-
-    // CÓDIGO REAL COMENTADO - Descomentar cuando tengas el backend
-    /*
-    try {
-      await ResponseService.registrarRespuesta({
+      const respuestaGuardada = await ResponseService.registrarRespuesta({
         idDenuncia: complaintId,
         idAdministrador: adminId,
         detalleRespuesta: responseData.detalleRespuesta,
@@ -138,25 +182,35 @@ const ResponseRegistration = () => {
         documentosSoporte: responseData.documentosSoporte
       });
 
-      navigate("/complaint_checkout", { 
-        state: { 
-          complaintId,
-          responseRegistered: true 
-        } 
+      console.log("✅ Respuesta registrada exitosamente:", respuestaGuardada);
+
+      setModal({
+        open: true,
+        type: "success",
+        title: "Respuesta registrada",
+        message: "La respuesta se registró correctamente. Se actualizará el estado de la denuncia.",
+        onConfirm: () => navigate("/complaint_checkout", { state: { complaintId, responseRegistered: true } }),
+        confirmText: "Ver detalles",
       });
     } catch (error) {
-      console.error("Error al registrar respuesta:", error);
-      alert("Error al guardar la respuesta. Por favor intente nuevamente.");
+      console.error("❌ Error completo al registrar respuesta:", error);
+      setModal({
+        open: true,
+        type: "error",
+        title: "Error al guardar",
+        message: error?.message ? `Error al guardar la respuesta: ${error.message}` : "Ocurrió un error al guardar la respuesta.",
+        onConfirm: null,
+        confirmText: "Cerrar",
+      });
     } finally {
       setSaving(false);
     }
-    */
   };
 
   if (loading) {
     return (
       <div style={styles.loadingContainer}>
-        <div style={styles.loadingText}>Cargando información...</div>
+        <div style={styles.loadingText}>Cargando información de la denuncia...</div>
       </div>
     );
   }
@@ -165,6 +219,12 @@ const ResponseRegistration = () => {
     return (
       <div style={styles.errorContainer}>
         <div style={styles.errorText}>No se encontró la denuncia</div>
+        <button 
+          onClick={() => navigate("/read_complaint")}
+          style={styles.backButton}
+        >
+          Volver a denuncias
+        </button>
       </div>
     );
   }
@@ -185,15 +245,22 @@ const ResponseRegistration = () => {
         </button>
       </div>
 
+      {/* Información de la denuncia con datos reales */}
       <div style={styles.infoCard}>
         <div style={styles.infoHeader}>
           <h2 style={styles.infoTitle}>Información de la Denuncia</h2>
-          <span style={styles.badge}>{complaint.estado?.nombre || "Sin estado"}</span>
+          <span style={{
+            ...styles.badge,
+            backgroundColor: complaint.estado ? '#dbeafe' : '#f3f4f6',
+            color: complaint.estado ? '#1e40af' : '#6b7280'
+          }}>
+            {complaint.estado?.nombre || "Sin estado"}
+          </span>
         </div>
         <div style={styles.infoGrid}>
           <div style={styles.infoItem}>
             <span style={styles.label}>Título:</span>
-            <span style={styles.value}>{complaint.titulo}</span>
+            <span style={styles.value}>{complaint.titulo || "Sin título"}</span>
           </div>
           <div style={styles.infoItem}>
             <span style={styles.label}>Fecha de creación:</span>
@@ -201,9 +268,24 @@ const ResponseRegistration = () => {
               {complaint.fechaCreacion ? new Date(complaint.fechaCreacion).toLocaleDateString() : "N/A"}
             </span>
           </div>
+          {complaint.descripcion && (
+            <div style={styles.infoItem}>
+              <span style={styles.label}>Descripción:</span>
+              <span style={styles.value}>{complaint.descripcion}</span>
+            </div>
+          )}
+          {complaint.categorias && complaint.categorias.length > 0 && (
+            <div style={styles.infoItem}>
+              <span style={styles.label}>Categorías:</span>
+              <span style={styles.value}>
+                {complaint.categorias.map(cat => cat.nombre).join(', ')}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Formulario de respuesta */}
       <form onSubmit={handleSubmit} style={styles.form}>
         <div style={styles.field}>
           <label style={styles.fieldLabel}>
@@ -320,6 +402,25 @@ const ResponseRegistration = () => {
           />
         </div>
       </form>
+
+      {/* Modal para mensajes */}
+      {modal.open && (
+        <Modal
+          open={modal.open}
+          type={modal.type}
+          title={modal.title}
+          message={modal.message}
+          onClose={() => setModal(prev => ({ ...prev, open: false }))}
+          onConfirm={() => {
+            setModal(prev => ({ ...prev, open: false }));
+            modal.onConfirm && modal.onConfirm();
+          }}
+          confirmText={modal.confirmText}
+          onCancel={modal.onCancel}
+          cancelText={modal.cancelText}
+          autoFocusConfirm={true}
+        />
+      )}
     </div>
   );
 };

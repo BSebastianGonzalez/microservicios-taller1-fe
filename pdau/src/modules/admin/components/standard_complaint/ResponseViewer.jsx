@@ -12,6 +12,69 @@ const ResponseViewer = ({ response }) => {
     );
   }
 
+  // Función para formatear fechas de forma segura
+  const formatDate = (dateString) => {
+    if (!dateString) return "Fecha no disponible";
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Fecha inválida";
+      
+      return date.toLocaleDateString("es-ES", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch (error) {
+      console.error("Error formateando fecha:", error);
+      return "Fecha inválida";
+    }
+  };
+
+  // Función para calcular fecha límite de apelación
+  const calculateAppealDeadline = () => {
+    if (!response.fechaRespuesta) return "Fecha no disponible";
+    
+    try {
+      const startDate = new Date(response.fechaRespuesta);
+      if (isNaN(startDate.getTime())) return "Fecha inválida";
+
+      const daysToAdd = response.diasApelacion || 5; // Default a 5 días si no está definido
+      const deadline = new Date(startDate);
+      deadline.setDate(deadline.getDate() + daysToAdd);
+      
+      return deadline.toLocaleDateString("es-ES", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      });
+    } catch (error) {
+      console.error("Error calculando fecha de apelación:", error);
+      return "Error en cálculo";
+    }
+  };
+
+  // Buscar el detalle de la respuesta en diferentes propiedades posibles
+  const getResponseDetail = () => {
+    return response.detalleRespuesta || 
+           response.detalle || 
+           response.descripcion || 
+           response.contenido || 
+           "No se proporcionó un detalle específico para esta respuesta.";
+  };
+
+  // Buscar el administrador responsable
+  const getAdministrador = () => {
+    if (response.administrador) {
+      return typeof response.administrador === 'object' 
+        ? response.administrador.nombre || "No especificado"
+        : response.administrador;
+    }
+    return response.administradorResponsable || "No especificado";
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -28,38 +91,34 @@ const ResponseViewer = ({ response }) => {
         <div style={styles.infoItem}>
           <span style={styles.infoLabel}>Fecha de respuesta:</span>
           <span style={styles.infoValue}>
-            {new Date(response.fechaRespuesta).toLocaleDateString("es-ES", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit"
-            })}
+            {formatDate(response.fechaRespuesta)}
           </span>
         </div>
         <div style={styles.infoItem}>
           <span style={styles.infoLabel}>Administrador responsable:</span>
-          <span style={styles.infoValue}>{response.administrador || "No especificado"}</span>
+          <span style={styles.infoValue}>{getAdministrador()}</span>
         </div>
       </div>
 
       <div style={styles.section}>
         <h4 style={styles.sectionTitle}>Detalle de la Respuesta</h4>
         <div style={styles.responseDetail}>
-          {response.detalleRespuesta}
+          {getResponseDetail()}
         </div>
       </div>
 
-      {response.documentosSoporte && response.documentosSoporte.length > 0 && (
+      {/* Mostrar documentos de soporte si existen */}
+      {(response.documentosSoporte && response.documentosSoporte.length > 0) ||
+       (response.archivosAdjuntos && response.archivosAdjuntos.length > 0) ? (
         <div style={styles.section}>
           <h4 style={styles.sectionTitle}>
-            Documentos de Soporte ({response.documentosSoporte.length})
+            Documentos de Soporte ({response.documentosSoporte?.length || response.archivosAdjuntos?.length})
           </h4>
           <div style={styles.documentsGrid}>
-            {response.documentosSoporte.map((doc) => (
+            {(response.documentosSoporte || response.archivosAdjuntos || []).map((doc, index) => (
               <a
-                key={doc.id}
-                href={doc.url}
+                key={doc.id || index}
+                href={doc.url || doc.ruta}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={styles.documentCard}
@@ -70,14 +129,16 @@ const ResponseViewer = ({ response }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <div style={styles.documentInfo}>
-                  <span style={styles.documentName}>{doc.nombre}</span>
-                  <span style={styles.documentSize}>{doc.tamaño}</span>
+                  <span style={styles.documentName}>{doc.nombre || doc.nombreArchivo || "Documento sin nombre"}</span>
+                  {doc.tamaño && (
+                    <span style={styles.documentSize}>{doc.tamaño}</span>
+                  )}
                 </div>
               </a>
             ))}
           </div>
         </div>
-      )}
+      ) : null}
 
       <div style={styles.appealBox}>
         <svg style={styles.clockIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,7 +146,7 @@ const ResponseViewer = ({ response }) => {
         </svg>
         <div style={styles.appealText}>
           <strong>Plazo de apelación:</strong> El denunciante tiene{" "}
-          <strong>{response.diasApelacion} días</strong> desde la fecha de respuesta 
+          <strong>{response.diasApelacion || 5} días</strong> desde la fecha de respuesta 
           para presentar una apelación o solicitud de reposición.
         </div>
       </div>
@@ -93,15 +154,7 @@ const ResponseViewer = ({ response }) => {
       <div style={styles.deadlineInfo}>
         <span style={styles.deadlineLabel}>Fecha límite para apelar:</span>
         <span style={styles.deadlineValue}>
-          {(() => {
-            const deadline = new Date(response.fechaRespuesta);
-            deadline.setDate(deadline.getDate() + response.diasApelacion);
-            return deadline.toLocaleDateString("es-ES", {
-              year: "numeric",
-              month: "long",
-              day: "numeric"
-            });
-          })()}
+          {calculateAppealDeadline()}
         </span>
       </div>
     </div>
@@ -230,6 +283,7 @@ const styles = {
     fontSize: "0.95rem",
     lineHeight: 1.6,
     whiteSpace: "pre-wrap",
+    minHeight: "80px",
   },
 
   documentsGrid: {
@@ -269,6 +323,7 @@ const styles = {
     fontSize: "0.9rem",
     fontWeight: 600,
     color: "#1e293b",
+    wordBreak: "break-word",
   },
 
   documentSize: {

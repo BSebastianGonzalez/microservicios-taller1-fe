@@ -1,11 +1,47 @@
-// src/services/AdminService.js
-import axios from "../api/axios";
+import axios from "axios";
+
+// URL específica para autenticación
+const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'https://pdauauthentication-microservice-production.up.railway.app';
+
+// Crear instancia específica para autenticación
+const authAxios = axios.create({
+  baseURL: AUTH_API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 30000,
+});
+
+// Interceptor para auth (similar al axios principal)
+authAxios.interceptors.request.use(
+  (config) => {
+    const requestPath = config.url || '';
+    const authPathsToSkip = ['/auth/login', '/auth/forgot-password', '/auth/reset-password'];
+    const isAuthEndpoint = authPathsToSkip.some(p => requestPath.includes(p));
+
+    if (!isAuthEndpoint) {
+      const adminData = localStorage.getItem('admin');
+      if (adminData) {
+        try {
+          const admin = JSON.parse(adminData);
+          if (admin && admin.token) {
+            config.headers.Authorization = `Bearer ${admin.token}`;
+          }
+        } catch (error) {
+          console.error('❌ Error parseando admin data:', error);
+        }
+      }
+    }  
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 const AdminService = {
-  // Iniciar sesión
+  // Iniciar sesión - usa el microservicio de autenticación
   login: async (correo, contrasenia) => {
     try {
-      const response = await axios.post("/auth/login", { correo, contrasenia });
+      const response = await authAxios.post("/auth/login", { correo, contrasenia });
       
       if (response.data.token) {
         localStorage.setItem("admin", JSON.stringify(response.data));
@@ -38,10 +74,11 @@ const AdminService = {
       return null;
     }
   },
-  // Obtener todos los administradores
+
+  // Obtener todos los administradores - usa el microservicio de autenticación
   getAllAdmins: async () => {
     try {
-      const response = await axios.get("/admins/list");
+      const response = await authAxios.get("/admins/list");
       return response.data;
     } catch (error) {
       console.error("Error al obtener la lista de administradores:", error);
@@ -51,17 +88,17 @@ const AdminService = {
 
   getAdminById: async (id) => {
     try {
-      const { data } = await axios.get(`/api/admin/${id}`);
+      const { data } = await authAxios.get(`/api/admin/${id}`);
       return data;
     } catch (error) {
       throw error.response?.data || { message: "Error obteniendo administrador" };
     }
   },
 
-  // Crear un nuevo administrador
+  // Crear un nuevo administrador - usa el microservicio de autenticación
   createAdmin: async (admin) => {
     try {
-      const response = await axios.post("/admins", admin);
+      const response = await authAxios.post("/admins", admin);
       return response.data;
     } catch (error) {
       console.error("Error al crear un nuevo administrador:", error);
@@ -69,10 +106,10 @@ const AdminService = {
     }
   },
 
-  // Actualizar un administrador existente
+  // Actualizar un administrador existente - usa el microservicio de autenticación
   updateAdmin: async (id, adminDetails) => {
     try {
-      const response = await axios.put(`/api/admin/${id}`, adminDetails);
+      const response = await authAxios.put(`/api/admin/${id}`, adminDetails);
       return response.data;
     } catch (error) {
       console.error(`Error al actualizar el administrador con ID ${id}:`, error);
@@ -80,13 +117,10 @@ const AdminService = {
     }
   },
 
-
-  
-
-  // Eliminar un administrador
+  // Eliminar un administrador - usa el microservicio de autenticación
   deleteAdmin: async (id) => {
     try {
-      const response = await axios.delete(`/admins/${id}`);
+      const response = await authAxios.delete(`/admins/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error al eliminar el administrador con ID ${id}:`, error);
@@ -94,30 +128,28 @@ const AdminService = {
     }
   },
   
-  // Solicitar restablecimiento de contraseña (envía correo con token)
+  // Solicitar restablecimiento de contraseña - usa el microservicio de autenticación
   requestPasswordReset: async (correo) => {
     try {
-      const response = await axios.post('/auth/forgot-password', { correo });
+      const response = await authAxios.post('/auth/forgot-password', { correo });
       return { message: response.data };
     } catch (error) {
       throw error.response?.data || error;
     }
   },
 
-  // Confirmar / resetear contraseña con token
+  // Confirmar / resetear contraseña con token - usa el microservicio de autenticación
   resetPassword: async (token, nuevaContrasenia) => {
     try {
-      const response = await axios.post('/auth/reset-password', { token, newPassword: nuevaContrasenia });
+      const response = await authAxios.post('/auth/reset-password', { token, newPassword: nuevaContrasenia });
       return { message: response.data };
     } catch (error) {
       throw error.response?.data || error;
     }
   },
   
-  // Cambiar contraseña del usuario autenticado
+  // Cambiar contraseña del usuario autenticado - usa el microservicio de autenticación
   changePassword: async (nuevaContrasenia) => {
-    // El backend expone PUT /api/admin/{id} para actualizar los datos,
-    // incluyendo la contraseña (campo 'contrasenia').
     try {
       const current = AdminService.getCurrentAdmin();
       const idCandidate = current?.id || current?._id || current?.admin?.id || current?.user?.id;
@@ -126,7 +158,7 @@ const AdminService = {
         throw new Error('ID del admin no encontrado en localStorage');
       }
 
-      const res = await axios.put(`/api/admin/${id}`, { contrasenia: nuevaContrasenia });
+      const res = await authAxios.put(`/api/admin/${id}`, { contrasenia: nuevaContrasenia });
       return res.data;
     } catch (error) {
       throw error.response?.data || error;

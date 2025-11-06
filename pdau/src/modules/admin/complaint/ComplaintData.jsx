@@ -23,6 +23,7 @@ const ComplaintData = () => {
   const [loading, setLoading] = useState(true);
   const [response, setResponse] = useState(null);
   const [loadingResponse, setLoadingResponse] = useState(false);
+  const [error, setError] = useState(null);
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -65,79 +66,60 @@ const ComplaintData = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // DATOS ESTÁTICOS PARA VISUALIZACIÓN
-        const datosEstaticosComplaint = {
-          id: complaintId || 1,
-          titulo: "Acoso y hostigamiento dentro del campus",
-          descripcion: "Se han presentado situaciones de acoso verbal y físico por parte de un profesor hacia varios estudiantes dentro de la facultad. A pesar de haber reportado el comportamiento de manera informal, no se han tomado medidas. Se requiere una investigación para garantizar un ambiente seguro y libre de hostigamiento.",
-          fechaCreacion: "2025-03-25T10:30:00",
-          estado: { 
-            id: 2, 
-            nombre: "En revisión",
-            siguientes: [3, 4, 5]
-          },
-          departamento: { id: 1, nombre: "Decanatura de Ciencias" },
-          categorias: [
-            { id: 1, nombre: "Acoso verbal" },
-            { id: 2, nombre: "Acoso físico" }
-          ],
-          anonima: true,
-          codigoSeguimiento: "ABC123XYZ"
-        };
+        setLoading(true);
+        setError(null);
 
-        const archivosEstaticos = [
-          { 
-            id: 1, 
-            nombreArchivo: "evidencia_1.pdf", 
-            urlArchivo: "#", 
-            tipo: "application/pdf", 
-            tamaño: "245 KB" 
-          },
-          { 
-            id: 2, 
-            nombreArchivo: "testimonio_estudiante.docx", 
-            urlArchivo: "#", 
-            tipo: "application/docx", 
-            tamaño: "128 KB" 
+        if (!complaintId) {
+          throw new Error("No se proporcionó un ID de denuncia");
+        }
+
+        // Obtener datos reales del backend
+        const [complaintData, filesData, departamentosData, estadosData] = await Promise.all([
+          ComplaintService.getComplaintById(complaintId),
+          ComplaintService.getFilesByComplaintId(complaintId),
+          ComplaintService.getAllDepartamentos(),
+          ComplaintService.getEstados ? ComplaintService.getEstados() : []
+        ]);
+
+        console.log("Datos de denuncia recibidos:", complaintData);
+        console.log("Archivos recibidos:", filesData);
+        console.log("Departamentos recibidos:", departamentosData);
+        console.log("Estados recibidos:", estadosData);
+
+        // Procesar datos para asegurar estructura consistente
+        const processedComplaint = complaintData.data || complaintData;
+        const processedFiles = Array.isArray(filesData) ? filesData : filesData.data || [];
+        const processedDepartamentos = Array.isArray(departamentosData) ? departamentosData : departamentosData.data || [];
+        const processedEstados = Array.isArray(estadosData) ? estadosData : estadosData.data || [];
+
+        setComplaint(processedComplaint);
+        setFiles(processedFiles);
+        setDepartamentos(processedDepartamentos);
+
+        // Obtener cambios de estado si el servicio está disponible
+        if (StateChangeService && StateChangeService.getStateChanges) {
+          try {
+            const changesData = await StateChangeService.getStateChanges(complaintId);
+            const processedChanges = Array.isArray(changesData) ? changesData : changesData.data || [];
+            setStateChanges(processedChanges);
+          } catch (err) {
+            console.warn("No se pudieron cargar los cambios de estado:", err);
           }
-        ];
+        }
 
-        const cambiosEstadoEstaticos = [
-          {
-            id: 1,
-            fechaCambio: "2025-03-25T10:30:00",
-            estadoAnterior: { id: 1, nombre: "Recibida" },
-            estadoNuevo: { id: 2, nombre: "En revisión" },
-            administrador: { nombre: "Admin Sistema" },
-            justificacion: "Denuncia recibida y asignada para revisión inicial"
-          }
-        ];
-
-        const departamentosEstaticos = [
-          { id: 1, nombre: "Decanatura de Ciencias" },
-          { id: 2, nombre: "Decanatura de Ingeniería" },
-          { id: 3, nombre: "Decanatura de Humanidades" },
-          { id: 4, nombre: "Oficina de Derechos Humanos" }
-        ];
-
-        const estadosSiguientesEstaticos = [
-          { id: 3, nombre: "En investigación" },
-          { id: 4, nombre: "Requiere más información" },
-          { id: 5, nombre: "Archivada" }
-        ];
-
-        // Simular delay de carga
-        setTimeout(() => {
-          setComplaint(datosEstaticosComplaint);
-          setFiles(archivosEstaticos);
-          setStateChanges(cambiosEstadoEstaticos);
-          setNextStates(estadosSiguientesEstaticos);
-          setDepartamentos(departamentosEstaticos);
-          setLoading(false);
-        }, 800);
+        // Determinar estados siguientes basados en el estado actual
+        if (processedComplaint.estado && processedEstados.length > 0) {
+          const currentStateId = processedComplaint.estado.id;
+          // Aquí deberías implementar la lógica para determinar qué estados son siguientes
+          // Por ahora, mostramos todos los estados excepto el actual
+          const availableNextStates = processedEstados.filter(estado => estado.id !== currentStateId);
+          setNextStates(availableNextStates);
+        }
 
       } catch (error) {
         console.error("Error al obtener la denuncia:", error);
+        setError("Error al cargar la denuncia. Por favor, intente nuevamente.");
+      } finally {
         setLoading(false);
       }
     };
@@ -147,31 +129,24 @@ const ComplaintData = () => {
   useEffect(() => {
     const fetchResponse = async () => {
       if (!complaintId) return;
+      
       setLoadingResponse(true);
-      
-      const mostrarConRespuesta = false;
-      
-      let responseEstatica = null;
-      
-      if (mostrarConRespuesta) {
-        responseEstatica = {
-          id: 1,
-          fechaRespuesta: "2025-03-30T14:30:00",
-          administrador: "Dra. María González - Decana",
-          detalleRespuesta: "Después de realizar una investigación exhaustiva, se han tomado las siguientes medidas:\n\n1. Se ha iniciado un proceso disciplinario contra el docente implicado.\n2. Se han implementado nuevos protocolos de prevención de acoso.\n3. Los estudiantes afectados han sido contactados y se les ha ofrecido apoyo psicológico.\n4. Se realizará un seguimiento continuo del caso.\n\nLa universidad reitera su compromiso con un ambiente educativo seguro y libre de hostigamiento.",
-          documentosSoporte: [
-            { id: 1, nombre: "Acta_investigacion.pdf", url: "#", tamaño: "245 KB" },
-            { id: 2, nombre: "Medidas_correctivas.docx", url: "#", tamaño: "128 KB" }
-          ],
-          diasApelacion: 15,
-          fechaLimiteApelacion: "2025-04-14T23:59:59"
-        };
-      }
-
-      setTimeout(() => {
-        setResponse(responseEstatica);
+      try {
+        // Obtener respuesta real del backend
+        const responseData = await ResponseService.obtenerRespuesta(complaintId);
+        
+        if (responseData) {
+          console.log("Respuesta recibida:", responseData);
+          setResponse(responseData.data || responseData);
+        } else {
+          setResponse(null);
+        }
+      } catch (error) {
+        console.warn("No se pudo cargar la respuesta:", error);
+        setResponse(null);
+      } finally {
         setLoadingResponse(false);
-      }, 600);
+      }
     };
     fetchResponse();
   }, [complaintId]);
@@ -181,23 +156,25 @@ const ComplaintData = () => {
       setShowResponseSuccess(true);
       setTimeout(() => setShowResponseSuccess(false), 3000);
       
-      const responseEstatica = {
-        id: 1,
-        fechaRespuesta: new Date().toISOString(),
-        administrador: "Administrador Actual",
-        detalleRespuesta: "Respuesta registrada exitosamente - " + new Date().toLocaleString(),
-        documentosSoporte: [],
-        diasApelacion: 15,
-        fechaLimiteApelacion: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
+      // Recargar la respuesta después de registrar una nueva
+      const fetchUpdatedResponse = async () => {
+        try {
+          const responseData = await ResponseService.obtenerRespuesta(complaintId);
+          if (responseData) {
+            setResponse(responseData.data || responseData);
+          }
+        } catch (error) {
+          console.warn("Error al cargar la respuesta actualizada:", error);
+        }
       };
+      fetchUpdatedResponse();
       
-      setResponse(responseEstatica);
-      
+      // Limpiar el estado de navegación
       const newState = { ...location.state };
       delete newState.responseRegistered;
       navigate(location.pathname, { replace: true, state: newState });
     }
-  }, [location, navigate]);
+  }, [location, navigate, complaintId]);
 
   const handleOpenModal = () => {
     setSelectedState("");
@@ -214,36 +191,39 @@ const ComplaintData = () => {
   const handleSubmitStateChange = async (e) => {
     e.preventDefault();
     if (!selectedState || !justification.trim()) return;
-    setSubmitting(true);
     
+    setSubmitting(true);
     try {
-      const nuevoEstado = nextStates.find(estado => estado.id === Number(selectedState));
+      // Llamada real al backend para cambiar estado
+      await ComplaintService.updateComplaintStatus(complaintId, parseInt(selectedState));
       
-      setTimeout(() => {
-        setComplaint(prev => ({
-          ...prev,
-          estado: nuevoEstado
-        }));
-        
-        const nuevoCambio = {
-          id: Date.now(),
-          fechaCambio: new Date().toISOString(),
-          estadoAnterior: complaint.estado,
-          estadoNuevo: nuevoEstado,
-          administrador: { nombre: "Admin Actual" },
-          justificacion: justification
-        };
-        
-        setStateChanges(prev => [nuevoCambio, ...prev]);
-        
-        setShowModal(false);
-        setSubmitting(false);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 2000);
-      }, 1000);
+      // Actualizar el estado local
+      const nuevoEstado = nextStates.find(estado => estado.id === Number(selectedState));
+      setComplaint(prev => ({
+        ...prev,
+        estado: nuevoEstado
+      }));
+      
+      // Agregar el cambio al historial local
+      const nuevoCambio = {
+        id: Date.now(),
+        fechaCambio: new Date().toISOString(),
+        estadoAnterior: complaint.estado,
+        estadoNuevo: nuevoEstado,
+        administrador: { nombre: "Admin Actual" }, // Esto debería venir del backend
+        justificacion: justification
+      };
+      
+      setStateChanges(prev => [nuevoCambio, ...prev]);
+      
+      setShowModal(false);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 2000);
       
     } catch (error) {
+      console.error("Error al cambiar el estado:", error);
       alert("Error al cambiar el estado. Intenta nuevamente.");
+    } finally {
       setSubmitting(false);
     }
   };
@@ -251,22 +231,24 @@ const ComplaintData = () => {
   const handleAssignDepartamento = async (e) => {
     e.preventDefault();
     if (!selectedDepartamento) return;
-    setAssigningDept(true);
     
+    setAssigningDept(true);
     try {
-      const deptoSeleccionado = departamentos.find(dept => dept.id === Number(selectedDepartamento));
+      // Llamada real al backend para asignar departamento
+      await ComplaintService.assignComplaintToDepartment(complaintId, parseInt(selectedDepartamento));
       
-      setTimeout(() => {
-        setComplaint(prev => ({
-          ...prev,
-          departamento: deptoSeleccionado
-        }));
-        
-        setAssignDeptSuccess(true);
-        setTimeout(() => setAssignDeptSuccess(false), 2000);
-      }, 800);
+      // Actualizar el estado local
+      const deptoSeleccionado = departamentos.find(dept => dept.id === Number(selectedDepartamento));
+      setComplaint(prev => ({
+        ...prev,
+        departamento: deptoSeleccionado
+      }));
+      
+      setAssignDeptSuccess(true);
+      setTimeout(() => setAssignDeptSuccess(false), 2000);
       
     } catch (error) {
+      console.error("Error al asignar departamento:", error);
       alert("Error al asignar el departamento.");
     } finally {
       setAssigningDept(false);
@@ -275,11 +257,25 @@ const ComplaintData = () => {
 
   const handleRegisterResponse = () => {
     navigate("/response_registration", {
-      state: { complaintId: complaintId || 1 }
+      state: { complaintId: complaintId }
     });
   };
 
   if (loading) return <ComplaintLoader />;
+
+  if (error) {
+    return (
+      <div style={styles.errorContainer}>
+        <div style={styles.errorText}>{error}</div>
+        <button 
+          onClick={() => window.location.reload()} 
+          style={styles.retryButton}
+        >
+          Reintentar
+        </button>
+      </div>
+    );
+  }
 
   if (!complaint) return <ComplaintNotFound />;
 
@@ -357,7 +353,7 @@ const ComplaintData = () => {
 
         <div style={styles.rightColumn}>
           <ComplaintSidebarActions
-            categorias={complaint.categorias}
+            categorias={complaint.categorias || []}
             files={files}
             estado={complaint.estado}
             onChangeState={handleOpenModal}
@@ -450,6 +446,30 @@ const styles = {
     flexDirection: "column",
     gap: "1.5rem",
   },
+  errorContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "50vh",
+    gap: "1rem",
+    padding: "2rem",
+  },
+  errorText: {
+    fontSize: "1.1rem",
+    color: "#dc2626",
+    textAlign: "center",
+  },
+  retryButton: {
+    padding: "0.75rem 1.5rem",
+    backgroundColor: "#2563eb",
+    color: "white",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "600",
+  },
+  // ... (mantén el resto de los estilos igual)
   registerResponseSection: {
     backgroundColor: "#f0f9ff",
     border: "2px solid #bae6fd",
