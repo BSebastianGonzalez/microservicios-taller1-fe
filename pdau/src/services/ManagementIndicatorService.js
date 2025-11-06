@@ -1,8 +1,16 @@
 class ManagementIndicatorService {
-  // Generar indicadores de tiempo de respuesta
+  
+  static getBaseUrl() {
+    return import.meta.env.VITE_RESPUESTAS_API_URL || 'https://pdau-complaintmanagement-production.up.railway.app';
+  }
+
+  // Generar indicadores
   static async generateResponseTimeIndicators() {
     try {
-      const response = await fetch('/api/management-indicators/response-times', {
+      const baseUrl = this.getBaseUrl();
+      console.log('🔄 Generando indicadores en:', `${baseUrl}/api/indicadores/generar`);
+      
+      const response = await fetch(`${baseUrl}/api/indicadores/generar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -10,115 +18,102 @@ class ManagementIndicatorService {
       });
       
       if (!response.ok) {
-        throw new Error('Error al generar indicadores');
+        throw new Error(`Error ${response.status}`);
       }
       
       const result = await response.json();
+      console.log('✅ Indicador generado:', result);
+      return this.mapearIndicadorBackendToFrontend(result);
       
-      // Verificar si se necesita enviar notificación
-      if (result.requiresNotification) {
-        await this.sendAuditNotification(result);
-      }
-      
-      return result;
     } catch (error) {
-      console.error('Error generating indicators:', error);
-      throw error;
+      console.error('❌ Error generando indicadores:', error);
+      throw new Error(`No se pudieron generar los indicadores: ${error.message}`);
     }
   }
 
-  // Obtener historial de indicadores
+  // Obtener historial (LISTAR todos)
   static async getIndicatorsHistory() {
     try {
-      // DATOS ESTÁTICOS PARA VISUALIZACIÓN
-      const datosEstaticos = [
-        {
-          id: 1,
-          fechaGeneracion: "2025-03-30T10:00:00",
-          totalDenuncias: 175,
-          menos3Dias: { cantidad: 45, porcentaje: 25.7 },
-          entre3y5Dias: { cantidad: 62, porcentaje: 35.4 },
-          entre5y10Dias: { cantidad: 38, porcentaje: 21.7 },
-          mas10Dias: { cantidad: 30, porcentaje: 17.1 },
-          requiereAuditoria: false
-        },
-        {
-          id: 2,
-          fechaGeneracion: "2025-03-25T09:30:00",
-          totalDenuncias: 168,
-          menos3Dias: { cantidad: 40, porcentaje: 23.8 },
-          entre3y5Dias: { cantidad: 58, porcentaje: 34.5 },
-          entre5y10Dias: { cantidad: 35, porcentaje: 20.8 },
-          mas10Dias: { cantidad: 35, porcentaje: 20.8 },
-          requiereAuditoria: false
-        },
-        {
-          id: 3,
-          fechaGeneracion: "2025-03-20T14:15:00", 
-          totalDenuncias: 160,
-          menos3Dias: { cantidad: 35, porcentaje: 21.9 },
-          entre3y5Dias: { cantidad: 50, porcentaje: 31.3 },
-          entre5y10Dias: { cantidad: 30, porcentaje: 18.8 },
-          mas10Dias: { cantidad: 45, porcentaje: 28.1 },
-          requiereAuditoria: false
-        },
-        {
-          id: 4,
-          fechaGeneracion: "2025-03-15T11:45:00",
-          totalDenuncias: 155,
-          menos3Dias: { cantidad: 30, porcentaje: 19.4 },
-          entre3y5Dias: { cantidad: 45, porcentaje: 29.0 },
-          entre5y10Dias: { cantidad: 25, porcentaje: 16.1 },
-          mas10Dias: { cantidad: 55, porcentaje: 35.5 },
-          requiereAuditoria: true
+      const baseUrl = this.getBaseUrl();
+      
+      const response = await fetch(`${baseUrl}/api/indicadores`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         }
-      ];
-
-      return new Promise((resolve) => {
-        setTimeout(() => resolve(datosEstaticos), 800);
       });
-
-      // CÓDIGO REAL COMENTADO
-      /*
-      const response = await fetch('/api/management-indicators/history');
+      
       if (!response.ok) {
-        throw new Error('Error al obtener historial');
+        throw new Error(`Error ${response.status}`);
       }
-      return await response.json();
-      */
+      
+      const data = await response.json();
+      console.log('📊 Historial obtenido:', data.length, 'registros');
+      
+      // Mapear y ordenar por fecha más reciente primero
+      return data
+        .map(indicador => this.mapearIndicadorBackendToFrontend(indicador))
+        .sort((a, b) => new Date(b.fechaGeneracion) - new Date(a.fechaGeneracion));
+      
     } catch (error) {
-      console.error('Error fetching indicators history:', error);
+      console.error('❌ Error obteniendo historial:', error);
+      throw new Error(`No se pudo cargar el historial: ${error.message}`);
+    }
+  }
+
+  // Obtener por ID
+  static async getIndicatorById(id) {
+    try {
+      const baseUrl = this.getBaseUrl();
+      const response = await fetch(`${baseUrl}/api/indicadores/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return this.mapearIndicadorBackendToFrontend(data);
+      
+    } catch (error) {
+      console.error('Error obteniendo indicador por ID:', error);
       throw error;
     }
   }
 
-  // Enviar notificación de auditoría
-  static async sendAuditNotification(indicatorsData) {
-    try {
-      const notificationData = {
-        subject: '🚨 ALERTA: Auditoría Requerida - Tiempos de Respuesta',
-        message: `El ${indicatorsData.mas10Dias.porcentaje}% de las denuncias han tardado más de 10 días en ser respondidas. Se requiere auditoría del área de control interno.`,
-        indicators: indicatorsData,
-        timestamp: new Date().toISOString()
-      };
+  // Mapear datos del backend al frontend
+  static mapearIndicadorBackendToFrontend(indicadorBackend) {
+    const totalDenuncias = indicadorBackend.menor3Dias + 
+                          indicadorBackend.entre3y5Dias + 
+                          indicadorBackend.entre5y10Dias + 
+                          indicadorBackend.mayor10Dias;
 
-      // Simular envío de notificación
-      console.log('📧 Enviando notificación de auditoría:', notificationData);
-      
-      // En implementación real, aquí iría el envío real del correo
-      const response = await fetch('/api/notifications/audit-alert', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(notificationData)
-      });
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error sending audit notification:', error);
-      // No lanzar error para no interrumpir el flujo principal
-    }
+    return {
+      id: indicadorBackend.id,
+      fechaGeneracion: indicadorBackend.fechaGeneracion,
+      totalDenuncias: totalDenuncias,
+      menos3Dias: {
+        cantidad: indicadorBackend.menor3Dias,
+        porcentaje: Number(indicadorBackend.porcentajeMenor3?.toFixed(1) || 0)
+      },
+      entre3y5Dias: {
+        cantidad: indicadorBackend.entre3y5Dias,
+        porcentaje: Number(indicadorBackend.porcentaje3y5?.toFixed(1) || 0)
+      },
+      entre5y10Dias: {
+        cantidad: indicadorBackend.entre5y10Dias,
+        porcentaje: Number(indicadorBackend.porcentaje5y10?.toFixed(1) || 0)
+      },
+      mas10Dias: {
+        cantidad: indicadorBackend.mayor10Dias,
+        porcentaje: Number(indicadorBackend.porcentajeMayor10?.toFixed(1) || 0)
+      },
+      requiereAuditoria: (indicadorBackend.porcentajeMayor10 || 0) > 50.0
+    };
   }
 }
 
