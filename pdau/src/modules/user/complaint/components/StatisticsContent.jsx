@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import ComplaintService from "../../../../services/ComplaintService";
+import CategoryStatisticsService from "../../../../services/CategoryStatisticsService";
 import Button from "../../../../components/Button";
 import Footer from "../../../../components/Footer";
 
@@ -11,69 +11,44 @@ const StatisticsContent = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchStatistics = async () => {
-      try {
-        setLoading(true);
-        
-        // DATOS ESTÁTICOS PARA VISUALIZACIÓN
-        const datosEstaticos = [
-          { 
-            categoria: "Acoso verbal", 
-            cantidad: 45, 
-            porcentaje: 25.7 
-          },
-          { 
-            categoria: "Acoso físico", 
-            cantidad: 32, 
-            porcentaje: 18.3 
-          },
-          { 
-            categoria: "Acoso psicológico", 
-            cantidad: 28, 
-            porcentaje: 16.0 
-          },
-          { 
-            categoria: "Corrupción", 
-            cantidad: 25, 
-            porcentaje: 14.3 
-          },
-          { 
-            categoria: "Discriminación", 
-            cantidad: 20, 
-            porcentaje: 11.4 
-          },
-          { 
-            categoria: "Fraude académico", 
-            cantidad: 15, 
-            porcentaje: 8.6 
-          },
-          { 
-            categoria: "Abuso de autoridad", 
-            cantidad: 10, 
-            porcentaje: 5.7 
-          }
-        ];
+  const fetchStatistics = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      
+      // ✅ USAR DATOS REALES DEL BACKEND
+      const data = await CategoryStatisticsService.getCategoryStatistics();
+      console.log('📈 Datos recibidos del backend:', data);
+      
+      // Mapear los datos del DTO EstadisticaCategoriaDTO al formato del frontend
+      // USANDO LOS NOMBRES CORRECTOS DE CAMPOS
+      const formattedData = Array.isArray(data)
+        ? data.map(item => ({
+            categoria: item?.nombreCategoria ?? "Sin categoría",
+            cantidad: Number(item?.totalDenuncias ?? 0),
+            porcentaje: Number(Number(item?.porcentaje ?? 0).toFixed(1))
+          }))
+        : [];
+      
+      console.log('🔄 Datos formateados:', formattedData);
+      setStatistics(formattedData);
+      
+    } catch (err) {
+      console.error("❌ Error fetching statistics:", err);
+      setError("Error al cargar las estadísticas desde el servidor");
+      
+      // Datos de fallback temporal
+      const datosFallback = [
+        { categoria: "Cargando...", cantidad: 0, porcentaje: 0 }
+      ];
+      setStatistics(datosFallback);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        setTimeout(() => {
-          setStatistics(datosEstaticos);
-          setLoading(false);
-        }, 1000);
-
-        // CÓDIGO REAL COMENTADO - Descomentar cuando tengas el backend
-        /*
-        const data = await ComplaintService.getComplaintStatistics();
-        setStatistics(data);
-        setLoading(false);
-        */
-      } catch (err) {
-        setError("Error al cargar las estadísticas");
-        setLoading(false);
-        console.error("Error fetching statistics:", err);
-      }
-    };
-
-    fetchStatistics();
-  }, []);
+  fetchStatistics();
+}, []);
 
   const totalDenuncias = statistics.reduce((sum, stat) => sum + stat.cantidad, 0);
 
@@ -82,15 +57,17 @@ const StatisticsContent = () => {
       <div style={styles.container}>
         <div style={styles.loadingContainer}>
           <div style={styles.loadingText}>Cargando estadísticas...</div>
+          <div style={styles.loadingSubtext}>Conectando con el servidor</div>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error && statistics[0]?.categoria === "Cargando...") {
     return (
       <div style={styles.container}>
         <div style={styles.errorContainer}>
+          <div style={styles.errorIcon}>⚠️</div>
           <div style={styles.errorText}>{error}</div>
           <Button
             text="Reintentar"
@@ -105,92 +82,120 @@ const StatisticsContent = () => {
   return (
     <div style={styles.pageContainer}>
       <div style={styles.mainContent}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>Estadísticas de Denuncias</h1>
-        <p style={styles.subtitle}>
-          Consulta el número y porcentaje de denuncias realizadas por tipo
-        </p>
-      </div>
-
-      <div style={styles.summaryCard}>
-        <div style={styles.summaryItem}>
-          <span style={styles.summaryLabel}>Total de Denuncias</span>
-          <span style={styles.summaryValue}>{totalDenuncias}</span>
+        <div style={styles.header}>
+          <h1 style={styles.title}>Estadísticas de Denuncias</h1>
+          <p style={styles.subtitle}>
+            Consulta el número y porcentaje de denuncias realizadas por categoría
+          </p>
         </div>
-        <div style={styles.summaryItem}>
-          <span style={styles.summaryLabel}>Tipos de Denuncia</span>
-          <span style={styles.summaryValue}>{statistics.length}</span>
-        </div>
-      </div>
 
-      <div style={styles.tableContainer}>
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>Tipo de Denuncia</th>
-              <th style={styles.th}>Cantidad</th>
-              <th style={styles.th}>Porcentaje</th>
-              <th style={styles.th}>Visualización</th>
-            </tr>
-          </thead>
-          <tbody>
-            {statistics.map((stat, index) => (
-              <tr key={index} style={styles.tr}>
-                <td style={styles.td}>{stat.categoria}</td>
-                <td style={styles.tdNumber}>{stat.cantidad}</td>
-                <td style={styles.tdNumber}>{stat.porcentaje}%</td>
-                <td style={styles.td}>
-                  <div style={styles.barContainer}>
-                    <div 
-                      style={{
-                        ...styles.bar,
-                        width: `${stat.porcentaje}%`,
-                        backgroundColor: getBarColor(index)
-                      }}
-                    />
-                  </div>
-                </td>
+        <div style={styles.summaryCard}>
+          <div style={styles.summaryItem}>
+            <span style={styles.summaryLabel}>Total de Denuncias</span>
+            <span style={styles.summaryValue}>{totalDenuncias}</span>
+          </div>
+          <div style={styles.summaryItem}>
+            <span style={styles.summaryLabel}>Categorías</span>
+            <span style={styles.summaryValue}>{statistics.length}</span>
+          </div>
+        </div>
+
+        {error && (
+          <div style={styles.warningAlert}>
+            <span style={styles.warningIcon}>⚠️</span>
+            <span style={styles.warningText}>
+              {error} Mostrando datos disponibles.
+            </span>
+          </div>
+        )}
+
+        <div style={styles.tableContainer}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Categoría de Denuncia</th>
+                <th style={styles.th}>Cantidad</th>
+                <th style={styles.th}>Porcentaje</th>
+                <th style={styles.th}>Visualización</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div style={styles.chartContainer}>
-        <h3 style={styles.chartTitle}>Distribución por Tipo de Denuncia</h3>
-        <div style={styles.chart}>
-          {statistics.map((stat, index) => (
-            <div key={index} style={styles.chartItem}>
-              <div style={styles.chartBarContainer}>
-                <div 
-                  style={{
-                    ...styles.chartBar,
-                    height: `${stat.porcentaje * 2}px`,
-                    backgroundColor: getBarColor(index)
-                  }}
-                />
-              </div>
-              <div style={styles.chartLabel}>
-                <span style={styles.chartCategory}>{stat.categoria}</span>
-                <span style={styles.chartPercentage}>{stat.porcentaje}%</span>
-              </div>
-            </div>
-          ))}
+            </thead>
+            <tbody>
+              {statistics.map((stat, index) => (
+                <tr key={index} style={styles.tr}>
+                  <td style={styles.td}>
+                    <div style={styles.categoryName}>
+                      {stat.categoria}
+                    </div>
+                  </td>
+                  <td style={styles.tdNumber}>
+                    <strong>{stat.cantidad}</strong>
+                  </td>
+                  <td style={styles.tdNumber}>
+                    <strong>{stat.porcentaje}%</strong>
+                  </td>
+                  <td style={styles.td}>
+                    <div style={styles.barContainer}>
+                      <div 
+                        style={{
+                          ...styles.bar,
+                          width: `${Math.min(stat.porcentaje, 100)}%`,
+                          backgroundColor: getBarColor(index)
+                        }}
+                        title={`${stat.porcentaje}% - ${stat.cantidad} denuncias`}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
 
-      <div style={styles.actions}>
-        <Button
-          text="Volver al Inicio"
-          className="bg-gray-600 hover:bg-gray-700 text-white"
-          onClick={() => navigate("/")}
-        />
-        <Button
-          text="Realizar Denuncia"
-          className="bg-red-600 hover:bg-red-700 text-white"
-          onClick={() => navigate("/complaint")}
-        />
-      </div>
+        <div style={styles.chartContainer}>
+          <h3 style={styles.chartTitle}>Distribución por Categoría de Denuncia</h3>
+          <div style={styles.chart}>
+            {statistics.map((stat, index) => (
+              <div key={index} style={styles.chartItem}>
+                <div style={styles.chartBarContainer}>
+                  <div 
+                    style={{
+                      ...styles.chartBar,
+                      height: `${Math.min(stat.porcentaje * 2, 200)}px`,
+                      backgroundColor: getBarColor(index)
+                    }}
+                  />
+                </div>
+                <div style={styles.chartLabel}>
+                  <span style={styles.chartCategory}>
+                    {((stat.categoria ?? "").length > 12
+                      ? (stat.categoria ?? "").substring(0, 12) + "..."
+                      : stat.categoria ?? "Sin categoría")}
+                  </span>
+                  <span style={styles.chartPercentage}>{stat.porcentaje ?? 0}%</span>
+                  <span style={styles.chartCount}>({stat.cantidad ?? 0})</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={styles.actions}>
+          <Button
+            text="Volver al Inicio"
+            className="bg-gray-600 hover:bg-gray-700 text-white"
+            onClick={() => navigate("/")}
+          />
+          <Button
+            text="Realizar Denuncia"
+            className="bg-red-600 hover:bg-red-700 text-white"
+            onClick={() => navigate("/complaint")}
+          />
+          <Button
+            text="Actualizar Datos"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => window.location.reload()}
+          />
+        </div>
       </div>
       <Footer />
     </div>
@@ -202,7 +207,8 @@ const getBarColor = (index) => {
   const colors = [
     "#ef4444", "#f97316", "#f59e0b", "#eab308", 
     "#84cc16", "#22c55e", "#14b8a6", "#06b6d4",
-    "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7"
+    "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7",
+    "#ec4899", "#f43f5e"
   ];
   return colors[index % colors.length];
 };
@@ -286,6 +292,25 @@ const styles = {
     fontWeight: "bold",
     color: "#000000",
   },
+  warningAlert: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    padding: "1rem",
+    backgroundColor: "#fffbeb",
+    border: "1px solid #fef3c7",
+    borderRadius: "8px",
+    marginBottom: "1rem",
+    width: "100%",
+    maxWidth: "800px",
+  },
+  warningIcon: {
+    fontSize: "1.25rem",
+  },
+  warningText: {
+    color: "#92400e",
+    fontWeight: "500",
+  },
   tableContainer: {
     backgroundColor: "#ffffff",
     borderRadius: "12px",
@@ -293,6 +318,8 @@ const styles = {
     border: "1px solid #e5e7eb",
     overflow: "hidden",
     marginBottom: "2rem",
+    width: "100%",
+    maxWidth: "1000px",
   },
   table: {
     width: "100%",
@@ -322,6 +349,9 @@ const styles = {
     fontWeight: "600",
     textAlign: "center",
   },
+  categoryName: {
+    fontWeight: "600",
+  },
   barContainer: {
     width: "100%",
     height: "20px",
@@ -333,6 +363,7 @@ const styles = {
     height: "100%",
     borderRadius: "10px",
     transition: "width 0.3s ease",
+    minWidth: "3%",
   },
   chartContainer: {
     backgroundColor: "#ffffff",
@@ -341,6 +372,8 @@ const styles = {
     border: "1px solid #e5e7eb",
     padding: "2rem",
     marginBottom: "2rem",
+    width: "100%",
+    maxWidth: "1000px",
   },
   chartTitle: {
     fontSize: "1.25rem",
@@ -354,7 +387,7 @@ const styles = {
     justifyContent: "space-around",
     alignItems: "flex-end",
     height: "300px",
-    gap: "1rem",
+    gap: "0.5rem",
   },
   chartItem: {
     display: "flex",
@@ -372,6 +405,7 @@ const styles = {
     width: "40px",
     borderRadius: "4px 4px 0 0",
     transition: "height 0.3s ease",
+    minHeight: "5px",
   },
   chartLabel: {
     display: "flex",
@@ -380,15 +414,19 @@ const styles = {
     textAlign: "center",
   },
   chartCategory: {
-    fontSize: "1rem",
+    fontSize: "0.875rem",
     color: "#000000",
     marginBottom: "0.25rem",
-    fontWeight: "700",
+    fontWeight: "600",
   },
   chartPercentage: {
     fontSize: "1rem",
     color: "#000000",
     fontWeight: "bold",
+  },
+  chartCount: {
+    fontSize: "0.75rem",
+    color: "#6b7280",
   },
   actions: {
     display: "flex",
@@ -398,13 +436,19 @@ const styles = {
   },
   loadingContainer: {
     display: "flex",
+    flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
     height: "400px",
+    gap: "1rem",
   },
   loadingText: {
     fontSize: "1.25rem",
     color: "#6b7280",
+  },
+  loadingSubtext: {
+    fontSize: "1rem",
+    color: "#9ca3af",
   },
   errorContainer: {
     display: "flex",
@@ -412,6 +456,9 @@ const styles = {
     alignItems: "center",
     gap: "1rem",
     padding: "2rem",
+  },
+  errorIcon: {
+    fontSize: "3rem",
   },
   errorText: {
     fontSize: "1.125rem",

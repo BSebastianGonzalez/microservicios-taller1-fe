@@ -1,8 +1,7 @@
-// src/api/axios.js
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_AUTH_URL,
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -15,7 +14,7 @@ axiosInstance.interceptors.request.use(
 
     // No adjuntar Authorization en endpoints de autenticación (login/reset)
     const requestPath = config.url || '';
-    const authPathsToSkip = ['/auth/login', '/auth/forgot-password', '/auth/reset-password'];
+    const authPathsToSkip = ['/auth/login'];
     const isAuthEndpoint = authPathsToSkip.some(p => requestPath.includes(p));
 
     if (!isAuthEndpoint) {
