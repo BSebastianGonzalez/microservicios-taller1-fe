@@ -23,135 +23,68 @@ const ComplaintsList = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
-      // DATOS ESTÁTICOS PARA VISUALIZACIÓN
-      const complaintsData = [
-        {
-          id: 1,
-          titulo: "Acoso y hostigamiento dentro del campus",
-          fechaCreacion: "2025-03-25",
-          estado: { id: 2, nombre: "En revisión" },
-          departamento: { id: 1, nombre: "Decanatura de Ciencias" },
-          categorias: [
-            { id: 1, nombre: "Acoso verbal" },
-            { id: 2, nombre: "Acoso físico" }
-          ]
-        },
-        {
-          id: 2,
-          titulo: "Corrupción en la asignación de becas y fondos",
-          fechaCreacion: "2025-03-17",
-          estado: { id: 3, nombre: "Respondida" },
-          departamento: { id: 2, nombre: "Bienestar Universitario" },
-          categorias: [{ id: 4, nombre: "Corrupción" }]
-        },
-        {
-          id: 3,
-          titulo: "Discriminación por parte de personal administrativo",
-          fechaCreacion: "2025-03-10",
-          estado: { id: 1, nombre: "Pendiente" },
-          departamento: { id: 3, nombre: "Recursos Humanos" },
-          categorias: [{ id: 5, nombre: "Discriminación" }]
-        },
-        {
-          id: 4,
-          titulo: "Irregularidades en evaluaciones y calificaciones",
-          fechaCreacion: "2025-03-08",
-          estado: { id: 2, nombre: "En revisión" },
-          departamento: { id: 1, nombre: "Decanatura de Ciencias" },
-          categorias: [{ id: 6, nombre: "Fraude académico" }]
-        },
-        {
-          id: 5,
-          titulo: "Maltrato o abuso de autoridad por docentes",
-          fechaCreacion: "2025-03-07",
-          estado: { id: 2, nombre: "En revisión" },
-          departamento: { id: 4, nombre: "Decanatura de Ingeniería" },
-          categorias: [{ id: 7, nombre: "Abuso de autoridad" }]
-        },
-        {
-          id: 6,
-          titulo: "Venta ilegal de materiales académicos",
-          fechaCreacion: "2025-03-07",
-          estado: { id: 1, nombre: "Pendiente" },
-          departamento: { id: 1, nombre: "Decanatura de Ciencias" },
-          categorias: [{ id: 8, nombre: "Fraude" }]
-        },
-        {
-          id: 7,
-          titulo: "Falta de seguridad en instalaciones universitarias",
-          fechaCreacion: "2025-03-07",
-          estado: { id: 2, nombre: "En revisión" },
-          departamento: { id: 5, nombre: "Infraestructura" },
-          categorias: [{ id: 9, nombre: "Seguridad" }]
-        },
-        {
-          id: 8,
-          titulo: "Nepotismo en contrataciones y ascensos",
-          fechaCreacion: "2025-03-01",
-          estado: { id: 1, nombre: "Pendiente" },
-          departamento: { id: 3, nombre: "Recursos Humanos" },
-          categorias: [{ id: 10, nombre: "Nepotismo" }]
-        }
-      ];
-
-      const categoriesData = [
-        { id: 1, nombre: "Acoso verbal" },
-        { id: 2, nombre: "Acoso físico" },
-        { id: 3, nombre: "Acoso psicológico" },
-        { id: 4, nombre: "Corrupción" },
-        { id: 5, nombre: "Discriminación" },
-        { id: 6, nombre: "Fraude académico" },
-        { id: 7, nombre: "Abuso de autoridad" },
-        { id: 8, nombre: "Fraude" },
-        { id: 9, nombre: "Seguridad" },
-        { id: 10, nombre: "Nepotismo" }
-      ];
-
-      const departamentosData = [
-        { id: 1, nombre: "Decanatura de Ciencias" },
-        { id: 2, nombre: "Bienestar Universitario" },
-        { id: 3, nombre: "Recursos Humanos" },
-        { id: 4, nombre: "Decanatura de Ingeniería" },
-        { id: 5, nombre: "Infraestructura" },
-        { id: 6, nombre: "Rectoría" }
-      ];
-
-      const estadosData = [
-        { id: 1, nombre: "Pendiente" },
-        { id: 2, nombre: "En revisión" },
-        { id: 3, nombre: "Respondida" },
-        { id: 4, nombre: "Archivada" }
-      ];
-
-      setComplaints(complaintsData);
-      setFilteredComplaints(complaintsData);
-      setCategories(categoriesData);
-      setDepartamentos(departamentosData);
-      setEstados(estadosData);
-
-      // CÓDIGO REAL COMENTADO - Descomentar cuando tengas el backend
-      /*
       try {
-        const complaintsData = await ComplaintService.getUnarchivedComplaints();
-        const categoriesData = await ComplaintService.getAllCategories();
-        const departamentosData = await ComplaintService.getAllDepartamentos();
-        const estadosData = ComplaintService.getEstados
-          ? await ComplaintService.getEstados()
-          : [];
+        setLoading(true);
+        setError(null);
+
+        // Obtener datos reales del backend
+        const [complaintsData, categoriesData, estadosData] = await Promise.all([
+          ComplaintService.getAllComplaints(),
+          ComplaintService.getAllCategories(),
+          ComplaintService.getEstados()
+        ]);
+
+        console.log("Datos recibidos del backend:", {
+          complaints: complaintsData,
+          categories: categoriesData,
+          estados: estadosData
+        });
+
+        // Procesar denuncias para asegurar estructura consistente
+        const processedComplaints = Array.isArray(complaintsData) ? complaintsData : [];
+        
+        // Tu backend no tiene departamentos, así que usamos array vacío
+        const processedDepartamentos = [];
+
+        setComplaints(processedComplaints);
+        setFilteredComplaints(processedComplaints);
+        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+        setDepartamentos(processedDepartamentos);
+        setEstados(Array.isArray(estadosData) ? estadosData : []);
+
+      } catch (err) {
+        console.error("Error al cargar datos:", err);
+        setError("Error al cargar las denuncias. Por favor, intente nuevamente.");
+        
+        // Datos de ejemplo como fallback
+        const complaintsData = [
+          {
+            id: 1,
+            titulo: "Acoso y hostigamiento dentro del campus",
+            fechaCreacion: "2025-03-25T10:30:00",
+            estado: { id: 2, nombre: "En revisión" },
+            categorias: [
+              { id: 1, nombre: "Acoso verbal" },
+              { id: 2, nombre: "Acoso físico" }
+            ]
+          }
+        ];
+
         setComplaints(complaintsData);
         setFilteredComplaints(complaintsData);
-        setCategories(categoriesData);
-        setDepartamentos(departamentosData);
-        setEstados(estadosData);
-      } catch (err) {
-        console.error("Error al cargar:", err);
+        setCategories([]);
+        setDepartamentos([]);
+        setEstados([]);
+      } finally {
+        setLoading(false);
       }
-      */
     };
     fetchData();
   }, []);
@@ -171,31 +104,39 @@ const ComplaintsList = () => {
     try {
       let filtered = complaints;
 
-      if (selectedDepartamentoId) {
-        filtered = filtered.filter(
-          (c) => String(c.departamento?.id) === selectedDepartamentoId
-        );
-      }
+      // Filtro por categoría
       if (selectedCategoryId) {
         filtered = filtered.filter((c) =>
           c.categorias?.some((cat) => String(cat.id) === selectedCategoryId)
         );
       }
+
+      // Filtro por estado
       if (selectedEstadoId) {
         filtered = filtered.filter(
           (c) => String(c.estado?.id) === selectedEstadoId
         );
       }
+
+      // Filtro por palabra clave
       if (keyword) {
         filtered = filtered.filter((c) =>
           c.titulo.toLowerCase().includes(keyword.toLowerCase())
         );
       }
+
+      // Filtro por fecha
       if (fechaInicio) {
-        filtered = filtered.filter((c) => c.fechaCreacion >= fechaInicio);
+        filtered = filtered.filter((c) => {
+          const complaintDate = new Date(c.fechaCreacion).toISOString().split('T')[0];
+          return complaintDate >= fechaInicio;
+        });
       }
       if (fechaFin) {
-        filtered = filtered.filter((c) => c.fechaCreacion <= fechaFin);
+        filtered = filtered.filter((c) => {
+          const complaintDate = new Date(c.fechaCreacion).toISOString().split('T')[0];
+          return complaintDate <= fechaFin;
+        });
       }
 
       setFilteredComplaints(filtered);
@@ -204,6 +145,16 @@ const ComplaintsList = () => {
     } catch (err) {
       console.error("Error al filtrar:", err);
     }
+  };
+
+  const clearFilters = () => {
+    setSelectedCategoryId("");
+    setSelectedEstadoId("");
+    setKeyword("");
+    setFechaInicio("");
+    setFechaFin("");
+    setFilteredComplaints(complaints);
+    setCurrentPage(1);
   };
 
   /* --------------- Paginación --------------- */
@@ -218,7 +169,10 @@ const ComplaintsList = () => {
 
   /* ----------------- Utils ------------------ */
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     const d = new Date(dateString);
+    if (isNaN(d.getTime())) return "Fecha inválida";
+    
     const dd = String(d.getDate()).padStart(2, "0");
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const yyyy = d.getFullYear();
@@ -226,6 +180,28 @@ const ComplaintsList = () => {
   };
 
   /* ---------------- Render ------------------ */
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <div style={styles.loadingText}>Cargando denuncias...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={styles.errorContainer}>
+        <div style={styles.errorText}>{error}</div>
+        <button 
+          onClick={() => window.location.reload()} 
+          style={styles.retryButton}
+        >
+          Reintentar
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.page}>
       <style>{`
@@ -233,23 +209,38 @@ const ComplaintsList = () => {
         .complaints-date-input::-webkit-calendar-picker-indicator {
           transform: translateX(50px);
         }
-        .complaints-date-input::-moz-focus-inner {
-          transform: translateX(50px);
-        }
       `}</style>
 
       {/* Botón filtros */}
       <div style={styles.rightDock}>
-        <button
-          onClick={toggleFilterModal}
-          style={styles.filterBtn}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#e5e7eb")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#f3f4f6")}
-          type="button"
-        >
-          <span>Aplicar filtros de búsqueda</span>
-          <FiFilter size={18} />
-        </button>
+        <div style={styles.filterButtons}>
+          <button
+            onClick={toggleFilterModal}
+            style={styles.filterBtn}
+            type="button"
+          >
+            <span>Aplicar filtros de búsqueda</span>
+            <FiFilter size={18} />
+          </button>
+          
+          {(selectedCategoryId || selectedEstadoId || keyword || fechaInicio || fechaFin) && (
+            <button
+              onClick={clearFilters}
+              style={styles.clearFilterBtn}
+              type="button"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Información de resultados */}
+      <div style={styles.resultsInfo}>
+        Mostrando {filteredComplaints.length} de {complaints.length} denuncias
+        {(selectedCategoryId || selectedEstadoId || keyword || fechaInicio || fechaFin) && (
+          <span style={styles.filteredInfo}> (filtradas)</span>
+        )}
       </div>
 
       {/* Tabla */}
@@ -303,7 +294,10 @@ const ComplaintsList = () => {
               {currentComplaints.length === 0 && (
                 <tr>
                   <td colSpan={3} style={styles.emptyCell}>
-                    No hay resultados para los filtros aplicados.
+                    {complaints.length === 0 
+                      ? "No hay denuncias registradas." 
+                      : "No hay resultados para los filtros aplicados."
+                    }
                   </td>
                 </tr>
               )}
@@ -328,22 +322,6 @@ const ComplaintsList = () => {
             }}
           >
             <h2 style={styles.modalTitle}>Filtrar denuncias</h2>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Departamento</label>
-              <select
-                value={selectedDepartamentoId}
-                onChange={(e) => setSelectedDepartamentoId(e.target.value)}
-                style={styles.select}
-              >
-                <option value="">Todos</option>
-                {departamentos.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
 
             <div style={styles.field}>
               <label style={styles.label}>Categoría</label>
@@ -385,12 +363,6 @@ const ComplaintsList = () => {
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 style={styles.keywordInput}
-                onFocus={(e) =>
-                  Object.assign(e.currentTarget.style, styles.keywordInputFocus)
-                }
-                onBlur={(e) =>
-                  Object.assign(e.currentTarget.style, styles.keywordInput)
-                }
               />
             </div>
 
@@ -403,12 +375,6 @@ const ComplaintsList = () => {
                   onChange={(e) => setFechaInicio(e.target.value)}
                   style={styles.dateInput}
                   className="complaints-date-input"
-                  onFocus={(e) =>
-                    Object.assign(e.currentTarget.style, styles.dateInputFocus)
-                  }
-                  onBlur={(e) =>
-                    Object.assign(e.currentTarget.style, styles.dateInput)
-                  }
                 />
               </div>
               <div style={{ ...styles.field, flex: 1 }}>
@@ -419,17 +385,18 @@ const ComplaintsList = () => {
                   onChange={(e) => setFechaFin(e.target.value)}
                   style={styles.dateInput}
                   className="complaints-date-input"
-                  onFocus={(e) =>
-                    Object.assign(e.currentTarget.style, styles.dateInputFocus)
-                  }
-                  onBlur={(e) =>
-                    Object.assign(e.currentTarget.style, styles.dateInput)
-                  }
                 />
               </div>
             </div>
 
             <div style={styles.modalActions}>
+              <button
+                type="button"
+                onClick={clearFilters}
+                style={styles.btnClear}
+              >
+                Limpiar
+              </button>
               <button
                 type="button"
                 onClick={toggleFilterModal}
@@ -448,7 +415,6 @@ const ComplaintsList = () => {
   );
 };
 
-/* ================== ESTILOS ================== */
 const styles = {
   page: {
     width: "100%",
@@ -458,7 +424,37 @@ const styles = {
     flexDirection: "column",
     background: "#fff",
   },
-
+  loadingContainer: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "200px",
+  },
+  loadingText: {
+    fontSize: "1.1rem",
+    color: "#000000",
+  },
+  errorContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "200px",
+    gap: "1rem",
+  },
+  errorText: {
+    fontSize: "1.1rem",
+    color: "#dc2626",
+    textAlign: "center",
+  },
+  retryButton: {
+    padding: "0.5rem 1rem",
+    backgroundColor: "#2563eb",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
   rightDock: {
     alignSelf: "flex-end",
     position: "sticky",
@@ -466,13 +462,16 @@ const styles = {
     zIndex: 5,
     marginBottom: "0.9rem",
   },
-
+  filterButtons: {
+    display: "flex",
+    gap: "10px",
+    alignItems: "center",
+  },
   filterBtn: {
     display: "inline-flex",
     alignItems: "center",
     gap: 10,
     padding: "10px 14px",
-    marginBottom: 15,
     background: "#f3f4f6",
     color: "#111827",
     borderRadius: 12,
@@ -481,7 +480,24 @@ const styles = {
     fontWeight: 700,
     cursor: "pointer",
   },
-
+  clearFilterBtn: {
+    padding: "10px 14px",
+    background: "#fef2f2",
+    color: "#dc2626",
+    border: "1px solid #fecaca",
+    borderRadius: 12,
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  resultsInfo: {
+    marginBottom: "1rem",
+    fontSize: "0.9rem",
+    color: "#6b7280",
+  },
+  filteredInfo: {
+    color: "#2563eb",
+    fontWeight: "600",
+  },
   tableWrapper: {
     width: "100%",
     border: "1px solid #9ca3af",
@@ -490,14 +506,12 @@ const styles = {
     boxShadow: "0 6px 18px rgba(2,6,23,.06)",
     background: "#fff",
   },
-
   table: {
     width: "100%",
     borderCollapse: "collapse",
     tableLayout: "fixed",
     fontFamily: "'Inter','Segoe UI', Arial, sans-serif",
   },
-
   th: {
     textAlign: "left",
     padding: "12px 14px",
@@ -507,11 +521,9 @@ const styles = {
     fontSize: "0.98rem",
     borderBottom: "1px solid #9ca3af",
   },
-
   tr: {
     borderBottom: "1px solid #d1d5db",
   },
-
   td: {
     padding: "12px 14px",
     fontSize: "0.98rem",
@@ -520,7 +532,6 @@ const styles = {
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
-
   tdTitle: {
     padding: "12px 14px",
     fontSize: "1rem",
@@ -531,7 +542,6 @@ const styles = {
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
-
   linkBtn: {
     display: "inline-flex",
     alignItems: "center",
@@ -543,13 +553,11 @@ const styles = {
     cursor: "pointer",
     textDecoration: "none",
   },
-
   emptyCell: {
     padding: "18px 12px",
     textAlign: "center",
     color: "#6b7280",
   },
-
   backdrop: {
     position: "fixed",
     inset: 0,
@@ -561,7 +569,6 @@ const styles = {
     padding: 16,
     backdropFilter: "blur(2px)",
   },
-
   modal: {
     width: "min(520px, 100%)",
     background: "#fff",
@@ -572,7 +579,6 @@ const styles = {
     transition: "all .2s ease",
     animation: "modalIn .2s ease-out",
   },
-
   modalTitle: {
     margin: 0,
     fontSize: "1.35rem",
@@ -580,19 +586,16 @@ const styles = {
     color: "#0f172a",
     marginBottom: 12,
   },
-
   field: {
     marginBottom: 12,
     display: "flex",
     flexDirection: "column",
     gap: 6,
   },
-
   label: {
     fontWeight: 700,
     color: "#0f172a",
   },
-
   select: {
     width: "100%",
     height: "44px",
@@ -603,7 +606,6 @@ const styles = {
     fontSize: "0.95rem",
     background: "#fff",
   },
-
   keywordInput: {
     width: "100%",
     height: "44px",
@@ -616,15 +618,7 @@ const styles = {
     border: "1px solid #cbd5e1",
     borderRadius: 12,
     outline: "none",
-    transition: "border-color .18s ease, box-shadow .18s ease",
-    boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
   },
-
-  keywordInputFocus: {
-    borderColor: "#2563eb",
-    boxShadow: "0 0 0 3px rgba(37,99,235,0.15)",
-  },
-
   dateInput: {
     width: "100%",
     height: "44px",
@@ -638,25 +632,23 @@ const styles = {
     border: "1px solid #cbd5e1",
     borderRadius: 12,
     outline: "none",
-    transition: "border-color .18s ease, box-shadow .18s ease",
-    boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
-    appearance: "none",
-    WebkitAppearance: "none",
-    MozAppearance: "textfield",
   },
-
-  dateInputFocus: {
-    borderColor: "#2563eb",
-    boxShadow: "0 0 0 3px rgba(37,99,235,0.15)",
-  },
-
   modalActions: {
     marginTop: 8,
     display: "flex",
     justifyContent: "flex-end",
     gap: 10,
   },
-
+  btnClear: {
+    padding: "10px 14px",
+    background: "#fef2f2",
+    color: "#dc2626",
+    border: "1px solid #fecaca",
+    borderRadius: 12,
+    fontWeight: 700,
+    cursor: "pointer",
+    marginRight: "auto",
+  },
   btnSecondary: {
     padding: "10px 14px",
     background: "#f1f5f9",
@@ -665,7 +657,6 @@ const styles = {
     fontWeight: 700,
     cursor: "pointer",
   },
-
   btnPrimary: {
     padding: "10px 14px",
     background: "linear-gradient(90deg, #2563eb 0%, #1e40af 100%)",

@@ -5,33 +5,74 @@ import Button from "../../../../components/Button";
 import ComplaintService from "../../../../services/ComplaintService";
 import ResponseService from "../../../../services/ResponseService";
 import Footer from "../../../../components/Footer";
-import { FiFileText, FiClock, FiAlertTriangle, FiXCircle, FiEdit } from 'react-icons/fi';
+import { FiFileText, FiClock, FiAlertTriangle, FiXCircle, FiEdit, FiDownload, FiExternalLink } from 'react-icons/fi';
 import { FaBalanceScale } from 'react-icons/fa';
 
 // Función para determinar el color del estado actual
 function getEstadoActualStyle(estadoNombre) {
-  const nombre = (estadoNombre || "").toLowerCase();
-  if (nombre === "revisión" || nombre === "revision" || nombre === "en revisión") {
+  const raw = (estadoNombre || "").toLowerCase();
+  const nombre = raw.normalize ? raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : raw;
+
+  if (nombre.includes('revision')) {
     return {
       ...styles.estadoActual,
-      background: "#fef9c3",
-      color: "#374151"
-    };
-  } else if (nombre === "validada" || nombre === "validado" || nombre === "respondida") {
-    return {
-      ...styles.estadoActual,
-      background: "#bbf7d0",
-      color: "#166534"
-    };
-  } else if (nombre === "cerrada" || nombre === "cerrado" || nombre === "archivada") {
-    return {
-      ...styles.estadoActual,
-      background: "#fecaca",
-      color: "#991b1b"
+      background: '#fef9c3',
+      color: '#374151'
     };
   }
+
+  if (nombre.includes('resuelt') || nombre.includes('respondid') || nombre.includes('validad')) {
+    return {
+      ...styles.estadoActual,
+      background: '#bbf7d0',
+      color: '#166534'
+    };
+  }
+
+  if (nombre.includes('rechaz')) {
+    return {
+      ...styles.estadoActual,
+      background: '#fecaca',
+      color: '#991b1b'
+    };
+  }
+
+  if (nombre.includes('archiv')) {
+    return {
+      ...styles.estadoActual,
+      background: '#bfdbfe',
+      color: '#1e3a8a'
+    };
+  }
+
   return styles.estadoActual;
 }
+
+// Función para obtener el icono según el tipo de archivo
+const getFileIcon = (nombre) => {
+  const extension = nombre?.split('.').pop()?.toLowerCase() || '';
+  
+  switch (extension) {
+    case 'pdf':
+      return <FiFileText style={{ ...styles.documentIcon, color: '#dc2626' }} />;
+    case 'doc':
+    case 'docx':
+      return <FiFileText style={{ ...styles.documentIcon, color: '#2563eb' }} />;
+    case 'xls':
+    case 'xlsx':
+      return <FiFileText style={{ ...styles.documentIcon, color: '#059669' }} />;
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+      return <FiFileText style={{ ...styles.documentIcon, color: '#7c3aed' }} />;
+    case 'zip':
+    case 'rar':
+      return <FiFileText style={{ ...styles.documentIcon, color: '#f59e0b' }} />;
+    default:
+      return <FiFileText style={styles.documentIcon} />;
+  }
+};
 
 const ComplaintResponse = () => {
   const location = useLocation();
@@ -40,6 +81,8 @@ const ComplaintResponse = () => {
   const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingResponse, setLoadingResponse] = useState(true);
+  const [error, setError] = useState(null);
+  const [temporaryUrls, setTemporaryUrls] = useState(new Set()); // Para limpiar URLs temporales
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -63,85 +106,277 @@ const ComplaintResponse = () => {
     };
   }, []);
 
+  // Limpiar URLs temporales cuando el componente se desmonte
+  useEffect(() => {
+    return () => {
+      temporaryUrls.forEach(url => {
+        window.URL.revokeObjectURL(url);
+      });
+    };
+  }, [temporaryUrls]);
+
   useEffect(() => {
     const fetchComplaintData = async () => {
       try {
+        setLoading(true);
+        setError(null);
+
+        let complaintData = null;
+
         if (location.state && location.state.complaint) {
-          setComplaint(location.state.complaint);
-          setLoading(false);
-          
-          // Buscar respuesta si existe
-          if (location.state.complaint.id) {
-            await fetchResponse(location.state.complaint.id);
-          }
+          complaintData = location.state.complaint;
         } else if (location.state && location.state.token) {
-          // Si viene con token, buscar la denuncia
-          const complaintData = await ComplaintService.getComplaintByToken(location.state.token);
-          setComplaint(complaintData);
-          setLoading(false);
-          
-          // Buscar respuesta
-          if (complaintData.id) {
-            await fetchResponse(complaintData.id);
-          }
+          complaintData = await ComplaintService.getComplaintByToken(location.state.token);
         } else {
-          // Durante desarrollo/local: si no viene state ni token, cargar datos estáticos
-          // para permitir acceder directamente por URL y ver la UI.
-          const datosEstaticos = {
-            id: 1,
-            titulo: "Acoso y hostigamiento dentro del campus",
-            descripcion: "Se han presentado situaciones de acoso verbal y físico por parte de un profesor hacia varios estudiantes dentro de la facultad.",
-            fechaCreacion: "2025-03-25T10:30:00",
-            estado: { id: 2, nombre: "En revisión" },
-            departamento: { id: 1, nombre: "Decanatura de Ciencias" }
-          };
-
-          setComplaint(datosEstaticos);
-          setLoading(false);
-
-          // Buscar respuesta asociada al id estático
-          if (datosEstaticos.id) {
-            await fetchResponse(datosEstaticos.id);
+          const urlParams = new URLSearchParams(window.location.search);
+          const token = urlParams.get('token');
+          
+          if (token) {
+            complaintData = await ComplaintService.getComplaintByToken(token);
+          } else {
+            throw new Error("No se proporcionó información para cargar la denuncia");
           }
         }
+
+        if (!complaintData) {
+          throw new Error("No se pudo cargar la información de la denuncia");
+        }
+
+        setComplaint(complaintData);
+        setLoading(false);
+        
+        if (complaintData.id) {
+          await fetchResponse(complaintData.id);
+        } else {
+          setLoadingResponse(false);
+        }
+
       } catch (error) {
         console.error("Error al cargar la denuncia:", error);
-        navigate("/");
+        setError(error.message || "Error al cargar la denuncia");
+        setLoading(false);
+        setLoadingResponse(false);
       }
     };
 
-  const fetchResponse = async () => {
+    const fetchResponse = async (complaintId) => {
       try {
         setLoadingResponse(true);
-        // DATOS ESTÁTICOS PARA VISUALIZACIÓN
-        const responseEstatica = {
-          id: 1,
-          fechaRespuesta: "2025-03-30T14:30:00",
-          administrador: "Dra. María González - Decana",
-          detalleRespuesta: "Después de realizar una investigación exhaustiva, se han tomado las siguientes medidas:\n\n1. Se ha iniciado un proceso disciplinario contra el docente implicado.\n2. Se han implementado nuevos protocolos de prevención de acoso.\n3. Los estudiantes afectados han sido contactados y se les ha ofrecido apoyo psicológico.\n4. Se realizará un seguimiento continuo del caso.\n\nLa universidad reitera su compromiso con un ambiente educativo seguro y libre de hostigamiento.",
-          documentosSoporte: [
-            { id: 1, nombre: "Acta_investigacion.pdf", url: "#", tamaño: "245 KB" },
-            { id: 2, nombre: "Medidas_correctivas.docx", url: "#", tamaño: "128 KB" }
-          ],
-          diasApelacion: 15,
-          fechaLimiteApelacion: "2025-04-14T23:59:59"
-        };
-
-        setTimeout(() => {
-          setResponse(responseEstatica);
-          setLoadingResponse(false);
-        }, 800);
-
-        // CÓDIGO REAL COMENTADO - Descomentar cuando tengas el backend
-        /*
+        
         const responseData = await ResponseService.obtenerRespuesta(complaintId);
-        setResponse(responseData);
+        
+        if (responseData) {
+          console.log("Respuesta obtenida del backend:", responseData);
+          
+          // Procesar documentos - CONVERSIÓN DE BINARIOS A URLs
+          const documentosProcesados = await procesarDocumentos(responseData);
+          
+          const processedResponse = {
+            id: responseData.id,
+            fechaRespuesta: responseData.fechaRespuesta,
+            administrador: responseData.administrador?.nombre || 
+                         responseData.administradorResponsable || 
+                         "Administrador del sistema",
+            detalleRespuesta: responseData.detalle || 
+                            responseData.descripcion || 
+                            responseData.contenido || 
+                            "No se proporcionó un detalle específico.",
+            documentosSoporte: documentosProcesados,
+            diasApelacion: responseData.diasApelacion || 5,
+            fechaLimiteApelacion: responseData.fechaLimiteApelacion || 
+                                calcularFechaLimite(responseData.fechaRespuesta, responseData.diasApelacion || 5)
+          };
+          
+          setResponse(processedResponse);
+        } else {
+          setResponse(null);
+        }
+        
         setLoadingResponse(false);
-        */
       } catch (error) {
         console.error("Error al cargar la respuesta:", error);
-        setResponse(null);
+        
+        if (error.response?.status === 404) {
+          setResponse(null);
+        } else {
+          setError("Error al cargar la respuesta: " + (error.message || "Error desconocido"));
+        }
+        
         setLoadingResponse(false);
+      }
+    };
+
+    // FUNCIÓN PARA PROCESAR DOCUMENTOS Y CONVERTIR BINARIOS A URLs
+    const procesarDocumentos = async (responseData) => {
+      try {
+        let docsRaw = responseData.documentosSoporte || 
+                     responseData.archivosAdjuntos || 
+                     responseData.documentos || 
+                     responseData.files || 
+                     responseData.archivos || 
+                     responseData.documentosRespuesta || 
+                     null;
+
+        // Si no hay documentos, retornar array vacío
+        if (!docsRaw) return [];
+
+        // Si viene como string JSON, parsear
+        if (typeof docsRaw === 'string') {
+          try {
+            docsRaw = JSON.parse(docsRaw);
+          } catch {
+            console.warn('No se pudo parsear documentos como JSON');
+            return [];
+          }
+        }
+
+        // Si es un objeto pero no array, buscar arrays dentro
+        if (docsRaw && !Array.isArray(docsRaw) && typeof docsRaw === 'object') {
+          if (Array.isArray(docsRaw.content)) docsRaw = docsRaw.content;
+          else if (Array.isArray(docsRaw.data)) docsRaw = docsRaw.data;
+          else if (Array.isArray(docsRaw.archivos)) docsRaw = docsRaw.archivos;
+          else {
+            // Buscar cualquier propiedad que sea array de objetos
+            const candidate = Object.values(docsRaw).find(v => 
+              Array.isArray(v) && v.length > 0 && typeof v[0] === 'object'
+            );
+            if (candidate) docsRaw = candidate;
+          }
+        }
+
+        if (!Array.isArray(docsRaw)) return [];
+
+        const BASE_RESPUESTAS_URL = import.meta.env.VITE_RESPUESTAS_API_URL || '';
+        const documentosProcesados = [];
+
+        for (const doc of docsRaw) {
+          try {
+            // Verificar si el documento tiene datos binarios
+            const tieneDatosBinarios = doc.datos && 
+              (Array.isArray(doc.datos) || 
+               (typeof doc.datos === 'string' && doc.datos.length > 100));
+
+            if (tieneDatosBinarios) {
+              console.log(`Procesando archivo binario: ${doc.nombre}`, {
+                tipoDatos: typeof doc.datos,
+                esArray: Array.isArray(doc.datos),
+                longitud: doc.datos.length
+              });
+
+              // CONVERTIR BINARIOS A BLOB Y LUEGO A URL
+              let blob;
+              
+              if (Array.isArray(doc.datos)) {
+                // Si es array de números (bytes)
+                const byteArray = new Uint8Array(doc.datos);
+                blob = new Blob([byteArray], { 
+                  type: doc.tipoContenido || 'application/pdf' 
+                });
+              } else if (typeof doc.datos === 'string') {
+                // Si es string (posiblemente base64 o hexadecimal)
+                if (doc.datos.startsWith('0×')) {
+                  // Formato hexadecimal (como "0×255044462...")
+                  const hexString = doc.datos.substring(2);
+                  const bytes = new Uint8Array(hexString.length / 2);
+                  for (let i = 0; i < bytes.length; i++) {
+                    bytes[i] = parseInt(hexString.substr(i * 2, 2), 16);
+                  }
+                  blob = new Blob([bytes], { 
+                    type: doc.tipoContenido || 'application/pdf' 
+                  });
+                } else {
+                  // Intentar como base64
+                  try {
+                    const binaryString = atob(doc.datos);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                      bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    blob = new Blob([bytes], { 
+                      type: doc.tipoContenido || 'application/pdf' 
+                    });
+                  } catch (e) {
+                    console.error('Error procesando como base64:', e);
+                    continue; // Saltar este archivo
+                  }
+                }
+              }
+
+              if (blob) {
+                const url = window.URL.createObjectURL(blob);
+                
+                // Guardar la URL temporal para limpiar después
+                setTemporaryUrls(prev => new Set([...prev, url]));
+                
+                documentosProcesados.push({
+                  id: doc.id || `doc-${documentosProcesados.length}`,
+                  nombre: doc.nombre || doc.nombreArchivo || `Documento ${documentosProcesados.length + 1}`,
+                  url: url,
+                  tipoContenido: doc.tipoContenido || 'application/pdf',
+                  tamaño: `(${Math.round(blob.size / 1024)} KB)`,
+                  esTemporal: true
+                });
+                
+                console.log(`Archivo convertido exitosamente: ${doc.nombre} - URL temporal creada`);
+              }
+            } else {
+              // Si no tiene datos binarios, usar URL normal
+              const rawUrl = doc.url || doc.ruta || doc.urlArchivo || doc.fileUrl || doc.path || doc.downloadUrl || doc.filePath || doc.publicUrl || '';
+
+              let normalizedUrl = rawUrl || '';
+              if (normalizedUrl) {
+                const trimmed = String(normalizedUrl).trim();
+                if (/^https?:\/\//i.test(trimmed)) {
+                  normalizedUrl = trimmed;
+                } else if (trimmed.startsWith('/')) {
+                  normalizedUrl = BASE_RESPUESTAS_URL ? 
+                    `${BASE_RESPUESTAS_URL.replace(/\/+$/, '')}${trimmed}` : trimmed;
+                } else {
+                  normalizedUrl = BASE_RESPUESTAS_URL ? 
+                    `${BASE_RESPUESTAS_URL.replace(/\/+$/, '')}/${trimmed}` : trimmed;
+                }
+              }
+
+              documentosProcesados.push({
+                id: doc.id || `doc-${documentosProcesados.length}`,
+                nombre: doc.nombre || doc.nombreArchivo || doc.fileName || doc.nombreDocumento || `Documento ${documentosProcesados.length + 1}`,
+                url: normalizedUrl,
+                tipoContenido: doc.tipoContenido,
+                tamaño: doc.tamano || doc.tamaño || doc.size || doc.fileSize || undefined
+              });
+            }
+          } catch (error) {
+            console.error(`Error procesando documento ${doc.nombre}:`, error);
+            // Incluir el documento aunque haya error, pero marcado como no disponible
+            documentosProcesados.push({
+              id: doc.id || `doc-${documentosProcesados.length}`,
+              nombre: doc.nombre || `Documento ${documentosProcesados.length + 1}`,
+              url: null,
+              error: true
+            });
+          }
+        }
+
+        console.log('Documentos procesados:', documentosProcesados);
+        return documentosProcesados;
+
+      } catch (error) {
+        console.error('Error general procesando documentos:', error);
+        return [];
+      }
+    };
+
+    const calcularFechaLimite = (fechaRespuesta, diasApelacion) => {
+      if (!fechaRespuesta) return null;
+      
+      try {
+        const fecha = new Date(fechaRespuesta);
+        const fechaLimite = new Date(fecha);
+        fechaLimite.setDate(fechaLimite.getDate() + diasApelacion);
+        return fechaLimite.toISOString();
+      } catch (error) {
+        console.error("Error calculando fecha límite:", error);
+        return null;
       }
     };
 
@@ -151,23 +386,56 @@ const ComplaintResponse = () => {
   const calcularDiasRestantes = (fechaLimite) => {
     if (!fechaLimite) return 0;
     
-    const ahora = new Date();
-    const limite = new Date(fechaLimite);
-    const diferencia = limite.getTime() - ahora.getTime();
-    const diasRestantes = Math.ceil(diferencia / (1000 * 60 * 60 * 24));
-    
-    return Math.max(0, diasRestantes);
+    try {
+      const ahora = new Date();
+      const limite = new Date(fechaLimite);
+      
+      if (isNaN(limite.getTime())) return 0;
+      
+      const diferencia = limite.getTime() - ahora.getTime();
+      const diasRestantes = Math.ceil(diferencia / (1000 * 60 * 60 * 24));
+      
+      return Math.max(0, diasRestantes);
+    } catch (error) {
+      console.error("Error calculando días restantes:", error);
+      return 0;
+    }
   };
 
   const formatearFecha = (fecha) => {
-    if (!fecha) return "N/A";
-    return new Date(fecha).toLocaleDateString("es-ES", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
+    if (!fecha) return "Fecha no disponible";
+    
+    try {
+      const date = new Date(fecha);
+      if (isNaN(date.getTime())) return "Fecha inválida";
+      
+      return date.toLocaleDateString("es-ES", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch (error) {
+      console.error("Error formateando fecha:", error);
+      return "Fecha inválida";
+    }
+  };
+
+  // Función para manejar el clic en un documento
+  const handleDocumentClick = (doc) => {
+    if (!doc.url || doc.error) {
+      console.warn('Documento no disponible:', doc);
+      return;
+    }
+
+    // Para URLs temporales (de binarios convertidos)
+    if (doc.esTemporal) {
+      window.open(doc.url, '_blank', 'noopener,noreferrer');
+    } else {
+      // Para URLs normales
+      window.open(doc.url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   if (loading) {
@@ -175,6 +443,22 @@ const ComplaintResponse = () => {
       <div style={styles.pageContainer}>
         <div style={styles.loadingContainer}>
           <div style={styles.loadingText}>Cargando información de la denuncia...</div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={styles.pageContainer}>
+        <div style={styles.errorContainer}>
+          <div style={styles.errorText}>{error}</div>
+          <Button
+            text="Volver al Inicio"
+            className="bg-red-600 hover:bg-red-700 text-white"
+            onClick={() => navigate("/")}
+          />
         </div>
         <Footer />
       </div>
@@ -197,7 +481,7 @@ const ComplaintResponse = () => {
     );
   }
 
-  const estadoActualNombre = complaint.estado?.nombre || complaint.estadoNombre;
+  const estadoActualNombre = complaint.estado?.nombre || complaint.estadoNombre || "Desconocido";
   const diasRestantes = response ? calcularDiasRestantes(response.fechaLimiteApelacion) : 0;
   const puedeApelar = response && diasRestantes > 0;
 
@@ -242,28 +526,72 @@ const ComplaintResponse = () => {
                 </div>
               </div>
 
-              {response.documentosSoporte && response.documentosSoporte.length > 0 && (
+              {response.documentosSoporte && response.documentosSoporte.length > 0 ? (
                 <div style={styles.documentsSection}>
                   <h4 style={styles.documentsTitle}>
                     Documentos de Soporte ({response.documentosSoporte.length})
                   </h4>
                   <div style={styles.documentsList}>
-                      {response.documentosSoporte.map((doc) => (
-                        <a
-                          key={doc.id}
-                          href={doc.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={styles.documentLink}
-                        >
-                          <FiFileText style={styles.documentIcon} />
-                          <div style={styles.documentInfo}>
-                            <span style={styles.documentName}>{doc.nombre}</span>
-                            <span style={styles.documentSize}>{doc.tamaño}</span>
+                      {response.documentosSoporte.map((doc, index) => {
+                        const isAvailable = doc.url && !doc.error;
+                        const esPdf = doc.nombre?.toLowerCase().endsWith('.pdf') || 
+                                     doc.tipoContenido === 'application/pdf';
+                        
+                        return (
+                          <div
+                            key={doc.id || index}
+                            style={{
+                              ...styles.documentCard,
+                              cursor: isAvailable ? 'pointer' : 'default',
+                              opacity: isAvailable ? 1 : 0.7,
+                              borderLeft: `4px solid ${esPdf ? '#dc2626' : '#3b82f6'}`
+                            }}
+                            onClick={() => isAvailable && handleDocumentClick(doc)}
+                            onKeyPress={(e) => isAvailable && (e.key === 'Enter' || e.key === ' ') && handleDocumentClick(doc)}
+                            tabIndex={isAvailable ? 0 : -1}
+                          >
+                            {getFileIcon(doc.nombre)}
+                            <div style={styles.documentInfo}>
+                              <span style={styles.documentName}>
+                                {doc.nombre || `Documento ${index + 1}`}
+                                {doc.esTemporal && (
+                                  <span style={{ 
+                                    fontSize: '0.7rem', 
+                                    color: '#f59e0b', 
+                                    marginLeft: '0.5rem',
+                                    fontWeight: 'normal'
+                                  }}>
+                                    (convertido)
+                                  </span>
+                                )}
+                              </span>
+                              {doc.tamaño && (
+                                <span style={styles.documentSize}>{doc.tamaño}</span>
+                              )}
+                            </div>
+                            <div style={styles.documentActions}>
+                              {isAvailable ? (
+                                <>
+                                  {doc.esTemporal ? (
+                                    <FiExternalLink style={styles.actionIcon} title="Abrir PDF convertido" />
+                                  ) : (
+                                    <FiExternalLink style={styles.actionIcon} title="Abrir en nueva pestaña" />
+                                  )}
+                                </>
+                              ) : (
+                                <span style={styles.unavailableText}>
+                                  {doc.error ? 'Error al cargar' : 'No disponible'}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </a>
-                      ))}
+                        );
+                      })}
                   </div>
+                </div>
+              ) : (
+                <div style={styles.noDocuments}>
+                  <span style={{ color: '#6b7280' }}>No hay archivos adjuntos para esta respuesta.</span>
                 </div>
               )}
 
@@ -305,7 +633,7 @@ const ComplaintResponse = () => {
                       Tienes {diasRestantes} día{diasRestantes !== 1 ? 's' : ''} restantes para presentar una apelación o solicitud de reposición.
                     </span>
                   </div>
-                ) : (
+                ) : response && (
                   <div style={styles.appealExpired}>
                     <FiXCircle style={styles.expiredIcon} />
                     <span style={styles.expiredText}>
@@ -348,6 +676,7 @@ const ComplaintResponse = () => {
   );
 };
 
+// Los estilos se mantienen igual...
 const styles = {
   pageContainer: {
     display: "flex",
@@ -529,7 +858,7 @@ const styles = {
     flexDirection: "column",
     gap: "0.5rem"
   },
-  documentLink: {
+  documentCard: {
     display: "flex",
     alignItems: "center",
     gap: "0.75rem",
@@ -538,10 +867,19 @@ const styles = {
     border: "1px solid #e5e7eb",
     borderRadius: "0.5rem",
     textDecoration: "none",
-    transition: "background-color 0.2s"
+    transition: "all 0.2s ease",
+    borderLeft: "4px solid #3b82f6"
+  },
+  documentCardHover: {
+    backgroundColor: "#f8fafc",
+    borderColor: "#3b82f6",
+    transform: "translateY(-1px)",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
   },
   documentIcon: {
-    fontSize: "1.25rem"
+    fontSize: "1.25rem",
+    color: "#6b7280",
+    flexShrink: 0
   },
   documentInfo: {
     display: "flex",
@@ -555,8 +893,22 @@ const styles = {
     fontSize: "0.9rem"
   },
   documentSize: {
-    color: "#000000",
+    color: "#6b7280",
     fontSize: "0.8rem"
+  },
+  documentActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem"
+  },
+  actionIcon: {
+    fontSize: "1rem",
+    color: "#6b7280"
+  },
+  unavailableText: {
+    color: "#9ca3af",
+    fontSize: "0.8rem",
+    fontStyle: "italic"
   },
   appealSection: {
     padding: "1.5rem",
@@ -654,6 +1006,16 @@ const styles = {
     lineHeight: "1.5",
     fontSize: "1rem"
   },
+  noDocuments: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '0.75rem 1rem',
+    marginBottom: '1rem',
+    backgroundColor: '#ffffff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '0.5rem'
+  },
   button: {
     minWidth: "clamp(120px, 15vw, 140px)",
     padding: "clamp(0.7rem, 2vw, 0.8rem) clamp(1.2rem, 3vw, 1.5rem)",
@@ -697,6 +1059,12 @@ const styles = {
     color: "#dc2626",
     textAlign: "center"
   }
+};
+
+// Agregar estilos de hover
+styles.documentCard = {
+  ...styles.documentCard,
+  ':hover': styles.documentCardHover
 };
 
 export default ComplaintResponse;

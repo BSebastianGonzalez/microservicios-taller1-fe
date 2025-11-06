@@ -27,7 +27,7 @@ const ComplaintService = {
   getComplaintByToken: async (token) => {
     try {
       const response = await axios.get(`/api/denuncias/token/${token}`);
-      console.log("Respuesta de la API:", response.data); // Depuración 
+      console.log("Respuesta de la API:", response.data);
       return response.data;
     } catch (error) {
       console.error(`Error al obtener la denuncia con el token ${token}:`, error);
@@ -46,11 +46,12 @@ const ComplaintService = {
     }
   },
 
-  // Actualizar una denuncia existente
+  // Actualizar una denuncia existente - CORREGIDO: Tu backend no tiene este endpoint
   updateComplaint: async (id, complaintData) => {
     try {
-      const response = await axios.put(`/api/denuncias/${id}`, complaintData);
-      return response.data;
+      // Nota: Tu backend Spring Boot no tiene endpoint PUT para denuncias
+      console.warn("Endpoint PUT para denuncias no implementado en el backend");
+      throw new Error("Actualización de denuncia no implementada");
     } catch (error) {
       console.error(`Error al actualizar la denuncia con ID ${id}:`, error);
       throw error;
@@ -67,11 +68,15 @@ const ComplaintService = {
     }
   },
 
-  // Obtener denuncias por categoría
+  // Obtener denuncias por categoría - CORREGIDO: Tu backend no tiene este endpoint
   getComplaintsByCategory: async (categoryId) => {
     try {
-      const response = await axios.get(`/api/denuncias/categorias/${categoryId}`);
-      return response.data;
+      // Nota: Tu backend no tiene este endpoint específico
+      console.warn("Endpoint para denuncias por categoría no implementado");
+      const allComplaints = await ComplaintService.getAllComplaints();
+      return allComplaints.filter(complaint => 
+        complaint.categorias?.some(cat => cat.id === categoryId)
+      );
     } catch (error) {
       console.error(`Error al obtener denuncias de la categoría con ID ${categoryId}:`, error);
       throw error;
@@ -100,40 +105,50 @@ const ComplaintService = {
     }
   },
 
-  // Obtener denuncias archivadas
+  // Obtener denuncias archivadas - CORREGIDO: Tu backend no tiene estos endpoints
   getArchivedComplaints: async () => {
     try {
-      const response = await axios.get("/denuncias/archivadas");
-      return response.data;
+      // Nota: Tu backend no tiene endpoints específicos para archivados
+      console.warn("Endpoint para denuncias archivadas no implementado");
+      const allComplaints = await ComplaintService.getAllComplaints();
+      // Filtrar por estado "Archivada" si existe en tu modelo
+      return allComplaints.filter(complaint => 
+        complaint.estado?.nombre?.toLowerCase().includes('archivada')
+      );
     } catch (error) {
       console.error("Error al obtener las denuncias archivadas:", error);
       throw error;
     }
   },
 
-  // Obtener denuncias no archivadas
+  // Obtener denuncias no archivadas - CORREGIDO
   getUnarchivedComplaints: async () => {
     try {
-      const response = await axios.get("/denuncias/no-archivadas");
-      return response.data;
+      // Nota: Tu backend no tiene endpoints específicos para no archivados
+      console.warn("Endpoint para denuncias no archivadas no implementado");
+      const allComplaints = await ComplaintService.getAllComplaints();
+      // Filtrar excluyendo estado "Archivada"
+      return allComplaints.filter(complaint => 
+        !complaint.estado?.nombre?.toLowerCase().includes('archivada')
+      );
     } catch (error) {
       console.error("Error al obtener las denuncias no archivadas:", error);
       throw error;
     }
   },
 
-  // Alternar el estado de archivado de una denuncia
+  // Alternar el estado de archivado - CORREGIDO: No implementado
   toggleArchivedStatus: async (id) => {
     try {
-      const response = await axios.put(`/denuncias/${id}/toggle-archivado`);
-      return response.data;
+      console.warn("Toggle de estado archivado no implementado en el backend");
+      throw new Error("Toggle de estado archivado no implementado");
     } catch (error) {
       console.error(`Error al alternar el estado de archivado de la denuncia con ID ${id}:`, error);
       throw error;
     }
   },
 
-
+  // Subir archivo
   uploadFile: async (file, denunciaId) => {
     try {
       const formData = new FormData();
@@ -163,64 +178,69 @@ const ComplaintService = {
     }
   },
 
-  // Remitir una denuncia a un departamento
+  // Remitir una denuncia a un departamento - CORREGIDO: No implementado
   assignComplaintToDepartment: async (idDenuncia, idDepartamento) => {
     try {
-      const response = await axios.put(`/denuncias/${idDenuncia}/departamento/${idDepartamento}`);
-      return response.data;
+      console.warn("Asignación a departamento no implementada en el backend");
+      throw new Error("Asignación a departamento no implementada");
     } catch (error) {
       console.error(`Error al asignar la denuncia ${idDenuncia} al departamento ${idDepartamento}:`, error);
       throw error;
     }
   },
 
-  // Obtener denuncias por departamento
+  // Obtener denuncias por departamento - CORREGIDO: No implementado
   getComplaintsByDepartment: async (idDepartamento) => {
     try {
-      const response = await axios.get(`/denuncias/departamento/${idDepartamento}`);
-      return response.data;
+      console.warn("Endpoint para denuncias por departamento no implementado");
+      const allComplaints = await ComplaintService.getAllComplaints();
+      return allComplaints.filter(complaint => 
+        complaint.departamento?.id === idDepartamento
+      );
     } catch (error) {
       console.error(`Error al obtener denuncias del departamento ${idDepartamento}:`, error);
       throw error;
     }
   },
 
-  // Obtener todos los departamentos
+  // Obtener todos los departamentos - CORREGIDO: No implementado en tu backend
   getAllDepartamentos: async () => {
     try {
-      const response = await axios.get("/departamentos");
-      return response.data;
+      console.warn("Endpoint para departamentos no implementado en el backend");
+      // Retornar array vacío ya que tu backend no tiene departamentos
+      return [];
     } catch (error) {
       console.error("Error al obtener los departamentos:", error);
       throw error;
     }
   },
 
-  // Actualizar el estado de una denuncia
+  // Actualizar el estado de una denuncia - CORREGIDO: No implementado
   updateComplaintStatus: async (idDenuncia, idEstado) => {
     try {
-      const response = await axios.put(`/denuncias/${idDenuncia}/estado/${idEstado}`);
-      return response.data;
+      console.warn("Actualización de estado no implementada en el backend");
+      throw new Error("Actualización de estado no implementada");
     } catch (error) {
       console.error(`Error al actualizar el estado de la denuncia con ID ${idDenuncia}:`, error);
       throw error;
     }
   },
 
+  // Obtener todos los estados
   getEstados: async () => {
-  try {
-    const response = await axios.get("/estados/list");
-    return response.data;
-  } catch (error) {
-    console.error("Error al obtener los estados:", error);
-    throw error;
-  }
-},
+    try {
+      const response = await axios.get("/api/estados/list");
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener los estados:", error);
+      throw error;
+    }
+  },
 
   // Obtener un estado por ID
   getEstadoById: async (id) => {
     try {
-      const response = await axios.get(`/estados/${id}`);
+      const response = await axios.get(`/api/estados/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error al obtener el estado con ID ${id}:`, error);
