@@ -23,6 +23,7 @@ import ComplaintCheckout from './pages/admin/ComplaintCheckout';
 import ResponseRegistrationPage from "./pages/admin/Responseregistrationpage";
 import ManagementIndicatorsPage from './pages/admin/ManagementIndicatorsPage';
 import ArchivedData from './modules/admin/components/archived_complaint/ArchivedSection';
+import ArchivedComplaintCheckout from './pages/complaint/ArchivedComplaintCheckout';
 import { Route, Routes, BrowserRouter } from 'react-router-dom'
 
 function App() {
@@ -49,12 +50,14 @@ function App() {
         <Route path="/admin_change_password" element={<ChangePasswordPage />} />
         <Route path="/data_update" element={<DataUpdatePage />} />
         <Route path="/personal_documents" element={<PersonalDocumentsPage />} />
+
         <Route path="/read_complaint" element={<ViewComplaints />} />
-        <Route path="/archived_complaints" element={<ViewArchivedComplaints />} />
         <Route path="/complaint_checkout" element={<ComplaintCheckout />} />
-        <Route path="/stats" element={<ManagementIndicatorsPage />} />
         <Route path="/response_registration" element={<ResponseRegistrationPage />} />
-        <Route path="/archived_complaint" element={<ArchivedData />} />
+        <Route path="/stats" element={<ManagementIndicatorsPage />} />
+
+        <Route path="/archived_complaints" element={<ViewArchivedComplaints />} />
+        <Route path="/archived_checkout" element={<ArchivedComplaintCheckout />} />
       </Routes>
     </BrowserRouter>
   );

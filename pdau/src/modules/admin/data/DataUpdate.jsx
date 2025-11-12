@@ -409,6 +409,7 @@ const styles = {
     alignItems: "center",
     boxSizing: "border-box",
     padding: "1rem 2rem 2rem 2rem",
+    position: 'relative',
   },
 
   header: {
@@ -432,12 +433,13 @@ const styles = {
   },
 
   backButton: {
+    position: 'absolute',
     display: "flex",
     alignItems: "center",
-    gap: "0.5rem",
-    padding: "0.75rem 1.5rem",
-    marginRight: "-1rem",
-    marginLeft: "-2.5rem",
+    top: '0.8rem',
+    gap: 8,
+    left: '1rem',
+    padding: '0.6rem 1rem',
     background: "white",
     borderRadius: "12px",
     border: "1px solid #e2e8f0",

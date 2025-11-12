@@ -42,6 +42,8 @@ const Sidebar = ({ adminData }) => {
       setSelectedSection("Ver denuncias anónimas");
     else if (p.startsWith("/archived_complaints"))
       setSelectedSection("Denuncias archivadas");
+    else if (p.startsWith("/archived_checkout"))
+      setSelectedSection("Revisión de Denuncia Archivada");
     else if (p.startsWith("/stats")) 
       setSelectedSection("Generar indicadores de gestión");
     else if (p.startsWith("/statistics")) setSelectedSection("Generar estadísticas");

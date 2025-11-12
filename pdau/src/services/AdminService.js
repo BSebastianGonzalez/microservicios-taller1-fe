@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // URL específica para autenticación
-const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'https://pdauauthentication-microservice-production.up.railway.app';
+const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL;
 
 // Crear instancia específica para autenticación
 const authAxios = axios.create({
@@ -12,7 +12,7 @@ const authAxios = axios.create({
   timeout: 30000,
 });
 
-// Interceptor para auth (similar al axios principal)
+// Interceptor para auth
 authAxios.interceptors.request.use(
   (config) => {
     const requestPath = config.url || '';
@@ -38,7 +38,7 @@ authAxios.interceptors.request.use(
 );
 
 const AdminService = {
-  // Iniciar sesión - usa el microservicio de autenticación
+  // Iniciar sesión
   login: async (correo, contrasenia) => {
     try {
       const response = await authAxios.post("/auth/login", { correo, contrasenia });
@@ -54,12 +54,10 @@ const AdminService = {
     }
   },
 
-  // Cerrar sesión
   logout: () => {
     localStorage.removeItem("admin");
   },
 
-  // Verificar si el usuario está autenticado
   isAuthenticated: () => {
     const admin = localStorage.getItem("admin");
     return !!admin;
@@ -75,7 +73,6 @@ const AdminService = {
     }
   },
 
-  // Obtener todos los administradores - usa el microservicio de autenticación
   getAllAdmins: async () => {
     try {
       const response = await authAxios.get("/admins/list");
@@ -95,7 +92,6 @@ const AdminService = {
     }
   },
 
-  // Crear un nuevo administrador - usa el microservicio de autenticación
   createAdmin: async (admin) => {
     try {
       const response = await authAxios.post("/admins", admin);
@@ -106,7 +102,6 @@ const AdminService = {
     }
   },
 
-  // Actualizar un administrador existente - usa el microservicio de autenticación
   updateAdmin: async (id, adminDetails) => {
     try {
       const response = await authAxios.put(`/api/admin/${id}`, adminDetails);
@@ -117,7 +112,6 @@ const AdminService = {
     }
   },
 
-  // Eliminar un administrador - usa el microservicio de autenticación
   deleteAdmin: async (id) => {
     try {
       const response = await authAxios.delete(`/admins/${id}`);
@@ -128,7 +122,6 @@ const AdminService = {
     }
   },
   
-  // Solicitar restablecimiento de contraseña - usa el microservicio de autenticación
   requestPasswordReset: async (correo) => {
     try {
       const response = await authAxios.post('/auth/forgot-password', { correo });
@@ -138,7 +131,6 @@ const AdminService = {
     }
   },
 
-  // Confirmar / resetear contraseña con token - usa el microservicio de autenticación
   resetPassword: async (token, nuevaContrasenia) => {
     try {
       const response = await authAxios.post('/auth/reset-password', { token, newPassword: nuevaContrasenia });
@@ -148,7 +140,6 @@ const AdminService = {
     }
   },
   
-  // Cambiar contraseña del usuario autenticado - usa el microservicio de autenticación
   changePassword: async (nuevaContrasenia) => {
     try {
       const current = AdminService.getCurrentAdmin();
@@ -164,6 +155,257 @@ const AdminService = {
       throw error.response?.data || error;
     }
   },
+
+  // ========== MÉTODOS DE DOCUMENTOS ==========
+
+  // ✅ MODIFICADO: Obtener documentos del administrador actual
+  getMisDocumentos: async () => {
+  try {
+    const admin = AdminService.getCurrentAdmin();
+    if (!admin || !admin.id) {
+      console.log('⚠️ No hay admin logueado');
+      return [];
+    }
+
+    // Primero intenta cargar desde localStorage
+    const key = `documentos_admin_${admin.id}`;
+    const stored = localStorage.getItem(key);
+    
+    if (stored) {
+      const documentos = JSON.parse(stored);
+      const documentosArray = Object.values(documentos);
+      console.log(`📦 ${documentosArray.length} documentos cargados desde localStorage`);
+      return documentosArray;
+    }
+
+    console.log('ℹ️ No hay documentos en localStorage, intentando cargar del servidor...');
+    
+    // Si no hay en localStorage, intenta del servidor pero maneja CORS
+    try {
+      const tiposDocumento = ['IDENTIDAD', 'CONTRATO', 'CONFIDENCIALIDAD', 'PERMISOS'];
+      const documentosPromises = tiposDocumento.map(async (tipo) => {
+        try {
+          // Usa HEAD para verificar existencia sin descargar el archivo completo
+          await authAxios.head(`/api/admin/${admin.id}/documento`, {
+            params: { tipo }
+          });
+          return { tipo, existe: true };
+        } catch (error) {
+          if (error.code === 'ERR_NETWORK' || error.message.includes('CORS')) {
+            console.warn(`⚠️ CORS error para ${tipo}, omitiendo servidor`);
+            return { tipo, existe: false };
+          }
+          return { tipo, existe: false };
+        }
+      });
+
+      const resultados = await Promise.all(documentosPromises);
+      const documentosExistentes = resultados.filter(r => r.existe);
+      
+      console.log(`✅ ${documentosExistentes.length} documentos encontrados en servidor`);
+      return documentosExistentes.map(doc => ({ tipo: doc.tipo }));
+
+    } catch (e) {
+      console.warn('❌ Error al conectar con servidor, usando solo localStorage');
+      return [];
+    }
+
+  } catch (error) {
+    console.error("Error al obtener documentos:", error);
+    return [];
+  }
+},
+
+  // Subir documento
+  subirDocumento: async (file, tipoDocumento) => {
+    try {
+      const admin = AdminService.getCurrentAdmin();
+      if (!admin || !admin.id) {
+        throw new Error('No se pudo obtener la información del administrador');
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('tipo', tipoDocumento);
+
+      console.log('📤 Enviando documento:', {
+        adminId: admin.id,
+        tipoDocumento: tipoDocumento,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+
+      const response = await authAxios.post(
+        `/api/admin/${admin.id}/documento`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 60000,
+        }
+      );
+
+      console.log('✅ Documento subido exitosamente:', response.data);
+      return response.data;
+
+    } catch (error) {
+      console.error("❌ Error al subir documento:", error);
+      
+      let errorMessage = "Error al subir el documento";
+      
+      if (error.response) {
+        console.error('📨 Respuesta del servidor:', error.response.data);
+        console.error('🔧 Status:', error.response.status);
+        
+        if (error.response.data && typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.status === 400) {
+          errorMessage = "Solicitud incorrecta. Verifique los datos del documento.";
+        } else if (error.response.status === 413) {
+          errorMessage = "El archivo es demasiado grande. Tamaño máximo: 2MB";
+        }
+      } else if (error.request) {
+        errorMessage = "No se pudo conectar con el servidor";
+      } else {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
+    }
+  },
+
+  // Actualizar documento existente
+  actualizarDocumento: async (file, tipoDocumento) => {
+    try {
+      const admin = AdminService.getCurrentAdmin();
+      if (!admin || !admin.id) {
+        throw new Error('No se pudo obtener la información del administrador');
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      console.log('🔄 Actualizando documento:', {
+        adminId: admin.id,
+        tipoDocumento: tipoDocumento,
+        fileName: file.name,
+        fileSize: file.size
+      });
+
+      const response = await authAxios.put(
+        `/api/admin/${admin.id}/documento`,
+        formData,
+        {
+          params: { tipo: tipoDocumento },
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 60000,
+        }
+      );
+
+      console.log('✅ Documento actualizado exitosamente:', response.data);
+      return response.data;
+
+    } catch (error) {
+      console.error("❌ Error al actualizar documento:", error);
+      
+      let errorMessage = "Error al actualizar el documento";
+      
+      if (error.response) {
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.request) {
+        errorMessage = "No se pudo conectar con el servidor";
+      } else {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
+    }
+  },
+
+  // Descargar documento
+  descargarDocumento: async (tipoDocumento) => {
+    try {
+      const admin = AdminService.getCurrentAdmin();
+      if (!admin || !admin.id) {
+        throw new Error('No se pudo obtener la información del administrador');
+      }
+
+      const response = await authAxios.get(
+        `/api/admin/${admin.id}/documento`,
+        {
+          params: { tipo: tipoDocumento },
+          responseType: 'blob'
+        }
+      );
+
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      const url = window.URL.createObjectURL(blob);
+      
+      return {
+        url,
+        filename: response.headers['content-disposition'] 
+          ? response.headers['content-disposition'].split('filename=')[1]?.replace(/"/g, '')
+          : `documento_${tipoDocumento}.pdf`
+      };
+    } catch (error) {
+      console.error("Error al descargar documento:", error);
+      throw error.response?.data || error;
+    }
+  },
+
+  // Eliminar documento
+  eliminarDocumento: async (tipoDocumento) => {
+    try {
+      const admin = AdminService.getCurrentAdmin();
+      if (!admin || !admin.id) {
+        throw new Error('No se pudo obtener la información del administrador');
+      }
+
+      console.log('🗑️ Eliminando documento:', {
+        adminId: admin.id,
+        tipoDocumento: tipoDocumento
+      });
+
+      const response = await authAxios.delete(
+        `/api/admin/${admin.id}/documento`,
+        {
+          params: { tipo: tipoDocumento }
+        }
+      );
+
+      console.log('✅ Documento eliminado exitosamente');
+      return response.data;
+
+    } catch (error) {
+      console.error("❌ Error al eliminar documento:", error);
+      
+      let errorMessage = "Error al eliminar el documento";
+      
+      if (error.response) {
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.request) {
+        errorMessage = "No se pudo conectar con el servidor";
+      } else {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
+    }
+  }
 };
 
 export default AdminService;

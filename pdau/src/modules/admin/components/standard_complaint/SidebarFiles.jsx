@@ -102,7 +102,7 @@ const styles = {
     flex: 1,
   },
   noFiles: {
-    color: "#d1d5db",
+    color: "#000000",
     fontStyle: "italic",
   },
 };

@@ -1,153 +1,361 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiFileText, FiDownload, FiUpload, FiEye, FiArchive, FiUserCheck, FiArrowLeft, FiCheckCircle, FiClock, FiXCircle } from "react-icons/fi";
+import { FiFileText, FiDownload, FiUpload, FiEye, FiArchive, FiArrowLeft, FiCheckCircle, FiClock, FiXCircle, FiAlertCircle, FiTrash2 } from "react-icons/fi";
+import AdminService from "../../../services/AdminService";
 
 const PersonalDocuments = () => {
   const navigate = useNavigate();
-
   const fileInputRef = useRef(null);
   const [uploadingKey, setUploadingKey] = useState(null);
-  const urlsRef = useRef(new Set());
+  const [uploadError, setUploadError] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const urlsRef = useRef(new Map());
 
-  const handleFileSelected = (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !uploadingKey) return;
-    // revoke previous object URL for this doc if existed
-    const prevDoc = documents.find((d) => d.key === uploadingKey);
-    if (prevDoc?.downloadUrl) {
-      try {
-        URL.revokeObjectURL(prevDoc.downloadUrl);
-        urlsRef.current.delete(prevDoc.downloadUrl);
-      } catch {
-        // ignore
-      }
-    }
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
-    const objectUrl = URL.createObjectURL(file);
-
-    const updatedDocs = documents.map((doc) =>
-      doc.key === uploadingKey
-        ? {
-            ...doc,
-            uploaded: true,
-            lastUpdated: new Date().toISOString().split("T")[0],
-            size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-            status: "pending",
-            downloadUrl: objectUrl,
-            fileName: file.name,
-          }
-        : doc
-    );
-
-    // keep track for cleanup on unmount
-    urlsRef.current.add(objectUrl);
-
-    setDocuments(updatedDocs);
-    setUploadingKey(null);
-    // limpiar input para permitir subir el mismo archivo nuevamente si es necesario
-    e.target.value = "";
-  };
-
-  useEffect(() => {
-    // copy ref to local variable now so cleanup can safely use it later
-    const urlsSet = urlsRef.current;
-    return () => {
-      // cleanup any object URLs created
-      const urls = Array.from(urlsSet);
-      urls.forEach((u) => {
-        try {
-          URL.revokeObjectURL(u);
-        } catch {
-          // ignore
-        }
-      });
-      urlsSet.clear();
-    };
-  }, []);
-
-  const handleDownload = (docKey) => {
-    const doc = documents.find((d) => d.key === docKey);
-    if (!doc || !doc.uploaded || !doc.downloadUrl) {
-      console.warn("No hay archivo para descargar para:", docKey);
-      return;
-    }
-
-    // crear un enlace temporal para forzar la descarga
-    const a = document.createElement("a");
-    a.href = doc.downloadUrl;
-    a.download = doc.fileName || `${doc.key}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
-  // botón de regresar
-  const handleBack = () => {
-    navigate("/data");
-  };
-
-  // Estado para simular documentos subidos
   const [documents, setDocuments] = useState([
     { 
-      key: "id",            
+      key: "IDENTIDAD",
       label: "Documento de Identidad", 
-      uploaded: true,
-      lastUpdated: "2024-01-15",
-      size: "2.4 MB",
-      status: "verified"
+      uploaded: false,
+      lastUpdated: null,
+      size: null,
+      status: "missing",
+      description: "Cédula, pasaporte o documento de identidad oficial",
+      documentoId: null,
+      fileUrl: null
     },
     { 
-      key: "contrato",      
+      key: "CONTRATO",
       label: "Contrato Laboral", 
-      uploaded: true,
-      lastUpdated: "2024-01-10",
-      size: "1.8 MB",
-      status: "pending"
+      uploaded: false,
+      lastUpdated: null,
+      size: null,
+      status: "missing",
+      description: "Contrato laboral vigente",
+      documentoId: null,
+      fileUrl: null
     },
     { 
-      key: "acuerdo",       
+      key: "CONFIDENCIALIDAD",
       label: "Acuerdo de Confidencialidad", 
       uploaded: false,
       lastUpdated: null,
       size: null,
-      status: "missing"
+      status: "missing",
+      description: "Acuerdo de confidencialidad firmado",
+      documentoId: null,
+      fileUrl: null
     },
     { 
-      key: "permisos",      
+      key: "PERMISOS",
       label: "Permisos Especiales", 
       uploaded: false,
       lastUpdated: null,
       size: null,
-      status: "missing"
+      status: "missing",
+      description: "Permisos especiales o licencias",
+      documentoId: null,
+      fileUrl: null
     },
   ]);
 
-  const handleView = (docKey) => {
-    const doc = documents.find((d) => d.key === docKey);
-    if (doc && doc.uploaded && doc.downloadUrl) {
-      // abrir el PDF subido en una nueva pestaña
-      try {
-        window.open(doc.downloadUrl, '_blank', 'noopener,noreferrer');
-        console.log('Abriendo PDF en nueva pestaña:', doc.downloadUrl);
-        return;
-      } catch (e) {
-        console.warn('No se pudo abrir el PDF en nueva pestaña, navegando a vista de documento', e);
+  useEffect(() => {
+    cargarDocumentosExistentes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const cargarDocumentosExistentes = async () => {
+    try {
+      setLoading(true);
+      console.log("Cargando documentos existentes...");
+      
+      const documentosBackend = await AdminService.getMisDocumentos();
+      
+      if (Array.isArray(documentosBackend)) {
+        const updated = documents.map((doc) => {
+          const found = documentosBackend.find((d) => 
+            String(d.tipo || d.tipoDocumento).toUpperCase() === String(doc.key).toUpperCase()
+          );
+          
+          if (found) {
+            // Determinar estado
+            const status = (found.estado && String(found.estado).toLowerCase().includes('verif')) 
+              ? 'verified' 
+              : 'uploaded'; // ✅ Cambio: ahora es "uploaded" en lugar de "pending"
+
+            const fileUrl = found.url || null;
+
+            return {
+              ...doc,
+              uploaded: true,
+              lastUpdated: found.fechaActualizacion || found.updatedAt || found.fechaSubida || new Date().toISOString().split('T')[0],
+              size: found.tamaño || found.size || (found.fileSize ? `${(found.fileSize / (1024*1024)).toFixed(1)} MB` : doc.size),
+              status,
+              fileUrl,
+              fileName: found.nombreArchivo || found.fileName || found.nombre || doc.label,
+              documentoId: found.id || found.documentoId || null
+            };
+          }
+          return doc;
+        });
+
+        setDocuments(updated);
       }
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error al cargar documentos:", error);
+      setUploadError("Error al cargar los documentos existentes");
+      setLoading(false);
+    }
+  };
+
+  const handleFileSelected = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadingKey) return;
+
+    // Validaciones
+    if (file.type !== 'application/pdf') {
+      setUploadError("Solo se permiten archivos PDF");
+      resetUploadState();
+      return;
     }
 
-    // fallback: navegar a la vista de documento si no hay archivo en memoria
-    navigate(`/personal_documents/view/${docKey}`);
-    console.log("Navegando a vista de documento:", docKey);
+    if (file.size > MAX_FILE_SIZE) {
+      const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+      setUploadError(`El archivo es demasiado grande: ${sizeInMB} MB. El tamaño máximo permitido es 2 MB.`);
+      resetUploadState();
+      return;
+    }
+
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      const doc = documents.find(d => d.key === uploadingKey);
+      const isUpdate = doc && doc.uploaded;
+
+      console.log(isUpdate ? "Actualizando documento:" : "Subiendo documento:", uploadingKey, file.name);
+      
+      let response;
+      if (isUpdate) {
+        // Actualizar documento existente
+        response = await AdminService.actualizarDocumento(file, uploadingKey);
+      } else {
+        // Subir nuevo documento
+        response = await AdminService.subirDocumento(file, uploadingKey);
+      }
+      
+      console.log("Operación exitosa:", response);
+
+      const objectUrl = URL.createObjectURL(file);
+      urlsRef.current.set(uploadingKey, objectUrl);
+
+      const updatedDocs = documents.map((d) =>
+        d.key === uploadingKey
+          ? {
+              ...d,
+              uploaded: true,
+              lastUpdated: new Date().toISOString().split("T")[0],
+              size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+              status: "uploaded", // ✅ Estado "uploaded" en lugar de "pending"
+              fileUrl: objectUrl,
+              fileName: file.name,
+              documentoId: response.id || d.documentoId
+            }
+          : d
+      );
+
+      setDocuments(updatedDocs);
+      setUploadError(null);
+      
+      console.log(isUpdate ? "✅ Documento actualizado exitosamente" : "✅ Documento subido exitosamente");
+
+    } catch (error) {
+      console.error("❌ Error:", error);
+      setUploadError(error.message || "Error al procesar el documento. Intente nuevamente.");
+    } finally {
+      resetUploadState();
+      e.target.value = "";
+    }
+  };
+
+  const handleDownload = async (docKey) => {
+    const doc = documents.find((d) => d.key === docKey);
+    
+    if (!doc || !doc.uploaded) {
+      setUploadError("No hay archivo para descargar");
+      return;
+    }
+
+    try {
+      // Si tenemos URL local, usarla
+      if (doc.fileUrl) {
+        const a = document.createElement("a");
+        a.href = doc.fileUrl;
+        a.download = doc.fileName || `${doc.label}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return;
+      }
+
+      // Si no, descargar del backend
+      const { url, filename } = await AdminService.descargarDocumento(docKey);
+      
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    } catch (error) {
+      console.error("Error al descargar documento:", error);
+      setUploadError("Error al descargar el documento");
+    }
+  };
+
+  const handleView = async (docKey) => {
+    const doc = documents.find((d) => d.key === docKey);
+    
+    if (!doc || !doc.uploaded) {
+      setUploadError("No hay archivo para visualizar");
+      return;
+    }
+
+    try {
+      let urlToOpen = doc.fileUrl;
+
+      if (!urlToOpen) {
+        const { url } = await AdminService.descargarDocumento(docKey);
+        urlToOpen = url;
+        urlsRef.current.set(docKey, url);
+      }
+
+      window.open(urlToOpen, '_blank', 'noopener,noreferrer');
+      
+    } catch (error) {
+      console.error("Error al visualizar documento:", error);
+      setUploadError("Error al visualizar el documento");
+    }
   };
 
   const handleUpload = (docKey) => {
     setUploadingKey(docKey);
+    setUploadError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = null;
       fileInputRef.current.click();
     }
-    console.log("Iniciando upload para:", docKey);
   };
+
+  const handleDelete = async (docKey) => {
+    const doc = documents.find((d) => d.key === docKey);
+    if (!doc || !doc.uploaded) return;
+
+    if (!window.confirm(`¿Está seguro de que desea eliminar el ${doc.label}?`)) {
+      return;
+    }
+
+    try {
+      // Usar el tipo de documento (docKey) en lugar del ID
+      await AdminService.eliminarDocumento(docKey);
+      
+      // Limpiar URL si existe
+      if (doc.fileUrl) {
+        try {
+          if (typeof doc.fileUrl === 'string' && doc.fileUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(doc.fileUrl);
+          }
+        } catch (err) {
+          console.warn('No se pudo revocar la URL del documento:', err);
+        }
+        urlsRef.current.delete(docKey);
+      }
+
+      // Actualizar estado local
+      const updatedDocs = documents.map((d) =>
+        d.key === docKey
+          ? {
+              ...d,
+              uploaded: false,
+              lastUpdated: null,
+              size: null,
+              status: "missing",
+              fileUrl: null,
+              fileName: null,
+              documentoId: null
+            }
+          : d
+      );
+
+      setDocuments(updatedDocs);
+      console.log("✅ Documento eliminado exitosamente");
+
+    } catch (error) {
+      console.error("Error al eliminar documento:", error);
+      setUploadError(error.message || "Error al eliminar el documento");
+    }
+  };
+
+  const resetUploadState = () => {
+    setUploading(false);
+    setUploadingKey(null);
+  };
+
+  // ---------- Animaciones para botones (hover / press / focus) ----------
+  const handleHoverEnter = (e) => {
+    try {
+      e.currentTarget.style.transform = 'translateY(-3px)';
+      e.currentTarget.style.boxShadow = '0 10px 30px rgba(2,6,23,0.12)';
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleHoverLeave = (e) => {
+    try {
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = 'none';
+    } catch {
+      // ignore
+    }
+  };
+
+  const handlePress = (e) => {
+    try {
+      e.currentTarget.style.transform = 'translateY(0) scale(0.995)';
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleRelease = (e) => {
+    try {
+      // volver al estado hover ligero
+      e.currentTarget.style.transform = 'translateY(-3px)';
+    } catch (err) {}
+  };
+
+  // Cleanup effect para URLs
+  useEffect(() => {
+    const urlsMap = urlsRef.current;
+    return () => {
+      urlsMap.forEach((url) => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {
+          // ignore
+        }
+      });
+      urlsMap.clear();
+    };
+  }, []);
 
   const StatusBadge = ({ status }) => {
     const map = {
@@ -155,6 +363,12 @@ const PersonalDocuments = () => {
         bg: '#ECFDF5',
         color: '#059669',
         text: 'Verificado',
+        Icon: FiCheckCircle
+      },
+      uploaded: {  // ✅ NUEVO ESTADO
+        bg: '#DBEAFE',
+        color: '#2563eb',
+        text: 'Subido',
         Icon: FiCheckCircle
       },
       pending: {
@@ -196,9 +410,16 @@ const PersonalDocuments = () => {
   const uploadedCount = documents.filter(doc => doc.uploaded).length;
   const totalCount = documents.length;
 
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <div style={styles.loadingText}>Cargando documentos...</div>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container}>
-      {/* input de archivo oculto que abre el explorador */}
       <input
         ref={fileInputRef}
         type="file"
@@ -207,23 +428,13 @@ const PersonalDocuments = () => {
         onChange={handleFileSelected}
       />
 
-      {/* Header con estadísticas y botón de regresar */}
+      {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerContent}>
           <div style={styles.navigationSection}>
             <div
               style={styles.backButton}
-              onClick={handleBack}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "#ffffff";
-                e.currentTarget.style.boxShadow = "0 6px 18px rgba(0,0,0,0.06)";
-                e.currentTarget.style.transform = "translateY(-2px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "white";
-                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.05)";
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
+              onClick={() => navigate("/data")}
               role="button"
               aria-label="Volver al perfil"
             >
@@ -247,16 +458,34 @@ const PersonalDocuments = () => {
         </div>
       </div>
 
+      {/* Alerta de error */}
+      {uploadError && (
+        <div style={styles.errorAlert}>
+          <FiAlertCircle size={20} />
+          <span>{uploadError}</span>
+          <button 
+            onClick={() => setUploadError(null)}
+            style={styles.closeErrorBtn}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Tarjeta principal de documentos */}
       <div style={styles.mainCard}>
         <div style={styles.cardHeader}>
           <FiFileText size={24} color="#2463eb" />
           <h2 style={styles.cardTitle}>Gestión de Documentos</h2>
-          <div style={styles.statusBadge}>
-            <span style={uploadedCount === totalCount ? styles.completeBadge : styles.incompleteBadge}>
-              {uploadedCount === totalCount ? "Completo" : "Pendiente"}
-            </span>
+          <div style={styles.fileLimitBadge}>
+            <span>Límite: 2MB por archivo</span>
           </div>
+        </div>
+
+        <div style={styles.uploadInfo}>
+          <p style={styles.uploadInfoText}>
+            <strong>Requisitos:</strong> Solo archivos PDF, tamaño máximo 2MB por documento
+          </p>
         </div>
 
         <div style={styles.documentsGrid}>
@@ -268,6 +497,7 @@ const PersonalDocuments = () => {
                 </div>
                 <div style={styles.docInfo}>
                   <h3 style={styles.docTitle}>{doc.label}</h3>
+                  <p style={styles.docDescription}>{doc.description}</p>
                   <StatusBadge status={doc.status} />
                 </div>
               </div>
@@ -287,8 +517,14 @@ const PersonalDocuments = () => {
                     <button
                       style={styles.actionBtn}
                       onClick={() => handleView(doc.key)}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#e0e7ff"}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#f8fafc"}
+                      disabled={uploading}
+                      title="Ver documento"
+                      onMouseEnter={handleHoverEnter}
+                      onMouseLeave={handleHoverLeave}
+                      onMouseDown={handlePress}
+                      onMouseUp={handleRelease}
+                      onFocus={handleHoverEnter}
+                      onBlur={handleHoverLeave}
                     >
                       <FiEye size={16} />
                       <span>Ver</span>
@@ -296,8 +532,14 @@ const PersonalDocuments = () => {
                     <button
                       style={styles.actionBtn}
                       onClick={() => handleUpload(doc.key)}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#e0e7ff"}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#f8fafc"}
+                      disabled={uploading}
+                      title="Actualizar documento"
+                      onMouseEnter={handleHoverEnter}
+                      onMouseLeave={handleHoverLeave}
+                      onMouseDown={handlePress}
+                      onMouseUp={handleRelease}
+                      onFocus={handleHoverEnter}
+                      onBlur={handleHoverLeave}
                     >
                       <FiUpload size={16} />
                       <span>Actualizar</span>
@@ -305,22 +547,51 @@ const PersonalDocuments = () => {
                     <button
                       style={styles.actionBtn}
                       onClick={() => handleDownload(doc.key)}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#e0e7ff"}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#f8fafc"}
+                      disabled={uploading}
+                      title="Descargar documento"
+                      onMouseEnter={handleHoverEnter}
+                      onMouseLeave={handleHoverLeave}
+                      onMouseDown={handlePress}
+                      onMouseUp={handleRelease}
+                      onFocus={handleHoverEnter}
+                      onBlur={handleHoverLeave}
                     >
                       <FiDownload size={16} />
                       <span>Descargar</span>
                     </button>
+                    <button
+                      style={{...styles.actionBtn, ...styles.deleteBtn}}
+                      onClick={() => handleDelete(doc.key)}
+                      disabled={uploading}
+                      title="Eliminar documento"
+                      onMouseEnter={handleHoverEnter}
+                      onMouseLeave={handleHoverLeave}
+                      onMouseDown={handlePress}
+                      onMouseUp={handleRelease}
+                      onFocus={handleHoverEnter}
+                      onBlur={handleHoverLeave}
+                    >
+                      <FiTrash2 size={16} />
+                      <span>Eliminar</span>
+                    </button>
                   </>
                 ) : (
                   <button
-                    style={styles.uploadBtn}
+                    style={{
+                      ...styles.uploadBtn,
+                      ...(uploading && uploadingKey === doc.key ? styles.uploadingBtn : {})
+                    }}
                     onClick={() => handleUpload(doc.key)}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "linear-gradient(135deg, #1e40af 0%, #2563eb 100%)"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"}
+                    disabled={uploading}
+                    onMouseEnter={handleHoverEnter}
+                    onMouseLeave={handleHoverLeave}
+                    onMouseDown={handlePress}
+                    onMouseUp={handleRelease}
+                    onFocus={handleHoverEnter}
+                    onBlur={handleHoverLeave}
                   >
                     <FiUpload size={16} />
-                    <span>Subir Documento</span>
+                    <span>{uploading && uploadingKey === doc.key ? "Subiendo..." : "Subir Documento"}</span>
                   </button>
                 )}
               </div>
@@ -329,7 +600,7 @@ const PersonalDocuments = () => {
         </div>
       </div>
 
-      {/* Panel de estadísticas */}
+      {/* Estadísticas */}
       <div style={styles.statsGrid}>
         <div style={styles.statCard}>
           <div style={styles.statIcon}>
@@ -343,7 +614,7 @@ const PersonalDocuments = () => {
         
         <div style={styles.statCard}>
           <div style={styles.statIcon}>
-            <FiUserCheck size={24} color="#10b981" />
+            <FiCheckCircle size={24} color="#10b981" />
           </div>
           <div style={styles.statContent}>
             <div style={styles.statNumber}>
@@ -352,21 +623,8 @@ const PersonalDocuments = () => {
             <div style={styles.statLabel}>Documentos verificados</div>
           </div>
         </div>
-        
-        <div style={styles.statCard}>
-          <div style={styles.statIcon}>
-            <FiArchive size={24} color="#f59e0b" />
-          </div>
-          <div style={styles.statContent}>
-            <div style={styles.statNumber}>
-              {documents.filter(d => d.status === 'pending').length}
-            </div>
-            <div style={styles.statLabel}>Pendientes de revisión</div>
-          </div>
-        </div>
       </div>
 
-      {/* Información adicional */}
       <div style={styles.infoCard}>
         <div style={styles.infoHeader}>
           <FiFileText size={20} color="#2463eb" />
@@ -374,7 +632,10 @@ const PersonalDocuments = () => {
         </div>
         <div style={styles.infoContent}>
           <p style={styles.infoText}>
-            • Todos los documentos deben estar en formato PDF y no superar los 5MB
+            • <strong>Solo se permiten archivos PDF</strong> - No se aceptan otros formatos
+          </p>
+          <p style={styles.infoText}>
+            • <strong>Tamaño máximo: 2MB por archivo</strong> - Comprima sus documentos si es necesario
           </p>
           <p style={styles.infoText}>
             • Los documentos serán verificados por el departamento de recursos humanos
@@ -390,7 +651,7 @@ const PersonalDocuments = () => {
 
 const styles = {
   container: {
-    width: "98%",
+    width: "100%",
     minHeight: "100%",
     display: "flex",
     flexDirection: "column",
@@ -438,7 +699,6 @@ const styles = {
     flexDirection: "column",
   },
 
-
   welcomeSubtitle: {
     fontSize: "1.25rem",
     color: "#000000ff",
@@ -464,6 +724,34 @@ const styles = {
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
   },
 
+  errorAlert: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.75rem",
+    padding: "1rem",
+    marginBottom: "1rem",
+    background: "#FEF2F2",
+    border: "1px solid #FCA5A5",
+    borderRadius: "12px",
+    color: "#DC2626",
+    fontWeight: "500",
+  },
+
+  closeErrorBtn: {
+    marginLeft: "auto",
+    background: "transparent",
+    border: "none",
+    fontSize: "1.5rem",
+    cursor: "pointer",
+    color: "#DC2626",
+    padding: "0",
+    width: "24px",
+    height: "24px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   mainCard: {
     width: "100%",          
     maxWidth: "100%",      
@@ -482,7 +770,6 @@ const styles = {
     marginBottom: "1rem",
     paddingBottom: "1rem",
     borderBottom: "1px solid #f1f5f9",
-    
   },
 
   cardTitle: {
@@ -493,27 +780,32 @@ const styles = {
     flex: "1",
   },
 
-  incompleteBadge: {
-    background: "#fef3c7",
-    color: "#d97706",
+  fileLimitBadge: {
+    background: "#e8f4ffff",
+    color: "#000000",
     padding: "0.4rem 0.8rem",
     borderRadius: "16px",
     fontSize: "0.85rem",
     fontWeight: "600",
   },
 
-  completeBadge: {
-    background: "#d1fae5",
-    color: "#059669",
-    padding: "0.4rem 0.8rem",
-    borderRadius: "16px",
-    fontSize: "0.85rem",
-    fontWeight: "600",
+  uploadInfo: {
+    marginBottom: "1.5rem",
+    padding: "0.75rem",
+    background: "#e8f4ffff",
+    borderRadius: "8px",
+    border: "1px solid #e2e8f0",
+  },
+
+  uploadInfoText: {
+    margin: 0,
+    fontSize: "0.9rem",
+    color: "#000000",
   },
 
   documentsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", // mejor ajuste responsivo para todo el ancho
+    gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
     gap: "1.25rem",
   },
 
@@ -557,12 +849,10 @@ const styles = {
     margin: "0 0 0.25rem 0",
   },
 
-  statusBadge: {
-    padding: "0.25rem 0.5rem",
-    borderRadius: "10px",
-    fontSize: "0.75rem",
-    fontWeight: "600",
-    display: "inline-block",
+  docDescription: {
+    fontSize: "0.85rem",
+    color: "#000000",
+    margin: "0 0 0.5rem 0",
   },
 
   docDetails: {
@@ -604,6 +894,11 @@ const styles = {
     outline: "none",
   },
 
+  deleteBtn: {
+    color: '#dc2626',
+    borderColor: '#fecaca'
+  },
+
   uploadBtn: {
     display: "inline-flex",
     alignItems: "center",
@@ -620,6 +915,11 @@ const styles = {
     outline: "none",
     width: "100%",
     justifyContent: "center",
+  },
+
+  uploadingBtn: {
+    opacity: 0.7,
+    cursor: "not-allowed",
   },
 
   statsGrid: {
@@ -692,7 +992,7 @@ const styles = {
   infoTitle: {
     fontSize: "1.05rem",
     fontWeight: "600",
-    color: "#1e293b",
+    color: "#000000",
     margin: "0",
   },
 
@@ -708,7 +1008,20 @@ const styles = {
     margin: "0",
     fontWeight: "400",
   },
-};
 
+  loadingContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '400px',
+    fontSize: '1.1rem',
+    color: '#6b7280'
+  },
+
+  loadingText: {
+    fontSize: '1.1rem',
+    color: '#6b7280'
+  }
+};
 
 export default PersonalDocuments;

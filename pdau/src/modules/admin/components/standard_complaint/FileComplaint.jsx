@@ -23,12 +23,7 @@ const FileComplaintModal = ({
     }
     setSubmitting(true);
     try {
-      await FileComplaintService.registrarArchivarDenuncia({
-        idDenuncia: complaintId,
-        idAdministrador: adminId,
-        archivar: true,
-        justificacion: justification,
-      });
+      await FileComplaintService.archiveComplaint(complaintId, justification, adminId);
       setJustification("");
       setSubmitting(false);
       onSuccess && onSuccess();

@@ -97,6 +97,17 @@ const RegisterSection = () => {
       descripcion: description,
       categoriasIds: selectedCategories.map((category) => category.id),
     };
+    // Intentar incluir el estado inicial si el backend lo define (buscar estado llamado 'Inicial')
+    try {
+      const estados = await ComplaintService.getEstados();
+      const inicial = (Array.isArray(estados) ? estados : (estados?.data || [])).find(s => (s.nombre || '').toString().toLowerCase() === 'inicial');
+      if (inicial) {
+        complaintData.estadoId = inicial.id;
+      }
+    } catch (err) {
+      // Si no se puede obtener estados, no bloqueamos la creación (el backend puede asignar el estado por defecto)
+      console.warn('No se pudo obtener estados para asignar estado inicial automáticamente:', err);
+    }
 
     try {
       // 1. Crear la denuncia

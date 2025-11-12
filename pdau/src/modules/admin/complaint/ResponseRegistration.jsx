@@ -4,6 +4,8 @@ import ComplaintService from "../../../services/ComplaintService";
 import ResponseService from "../../../services/ResponseService";
 import Button from "../../../components/Button";
 import Modal from "../../../components/Modal";
+import { FiFileText, FiExternalLink, FiX } from 'react-icons/fi';
+import { openDocumentInNewTab, openDocumentFromUrl } from '../../../utils/documentViewer';
 
 const ResponseRegistration = () => {
   const navigate = useNavigate();
@@ -81,46 +83,106 @@ const ResponseRegistration = () => {
   }, [complaintId, navigate]);
 
   const handleFileUpload = (e) => {
-  const files = Array.from(e.target.files);
-  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-  
-  const validFiles = files.filter(file => {
-    if (file.size > MAX_FILE_SIZE) {
-      setModal({
-        open: true,
-        type: "error",
-        title: "Archivo demasiado grande",
-        message: `El archivo "${file.name}" es demasiado grande (${(file.size / 1024 / 1024).toFixed(2)} MB). Tamaño máximo permitido: 2MB`,
-        onConfirm: null,
-        confirmText: "Cerrar",
-      });
-      return false;
-    }
-    return true;
-  });
+    const files = Array.from(e.target.files);
+    const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+    
+    const validFiles = files.filter(file => {
+      if (file.size > MAX_FILE_SIZE) {
+        setModal({
+          open: true,
+          type: "error",
+          title: "Archivo demasiado grande",
+          message: `El archivo "${file.name}" es demasiado grande (${(file.size / 1024 / 1024).toFixed(2)} MB). Tamaño máximo permitido: 2MB`,
+          onConfirm: null,
+          confirmText: "Cerrar",
+        });
+        return false;
+      }
+      return true;
+    });
 
-  const newFiles = validFiles.map((file, idx) => ({
-    id: Date.now() + idx,
-    file: file,
-    nombre: file.name,
-    tipo: file.type,
-    tamaño: (file.size / 1024 / 1024).toFixed(2) + " MB"
-  }));
-  
-  setResponseData(prev => ({
-    ...prev,
-    documentosSoporte: [...prev.documentosSoporte, ...newFiles]
-  }));
-  
-  // Limpiar el input file para permitir seleccionar el mismo archivo otra vez
-  e.target.value = '';
-};
+    const newFiles = validFiles.map((file, idx) => ({
+      id: Date.now() + idx,
+      file: file,
+      nombre: file.name,
+      tipo: file.type,
+      tamaño: `(${(file.size / 1024).toFixed(0)} KB)`
+    }));
+    
+    setResponseData(prev => ({
+      ...prev,
+      documentosSoporte: [...prev.documentosSoporte, ...newFiles]
+    }));
+    
+    // Limpiar el input file para permitir seleccionar el mismo archivo otra vez
+    e.target.value = '';
+  };
 
-  const removeFile = (fileId) => {
+  const removeFile = (e, fileId) => {
+    e.stopPropagation(); // Evitar que se active el click de la tarjeta
     setResponseData(prev => ({
       ...prev,
       documentosSoporte: prev.documentosSoporte.filter(f => f.id !== fileId)
     }));
+  };
+
+  // FUNCIÓN MEJORADA - Abre en nueva pestaña con nombre y logo
+  const handleDocumentClick = (doc) => {
+    try {
+      console.log("📁 Intentando abrir archivo:", doc);
+
+      // Si el documento tiene un File object (archivo local seleccionado)
+      if (doc.file && doc.file instanceof File) {
+        console.log("📄 Abriendo archivo local en nueva pestaña:", doc.file.name);
+        openDocumentInNewTab(doc.file, doc.nombre, doc.tipo);
+        return;
+      }
+
+      // Si el archivo ya tiene una URL directa (archivo subido al backend)
+      if (doc.url && !doc.file) {
+        console.log("🔗 Abriendo URL directa en nueva pestaña:", doc.url);
+        openDocumentFromUrl(doc.url, doc.nombre);
+        return;
+      }
+
+      // Si no se puede abrir de ninguna manera
+      console.error("❌ No se puede abrir el archivo - formato no reconocido");
+      throw new Error('No se puede abrir el archivo. Formato no soportado.');
+
+    } catch (err) {
+      console.error('❌ Error abriendo archivo:', err);
+      setModal({
+        open: true,
+        type: 'error',
+        title: 'Error al abrir archivo',
+        message: err.message || 'No se pudo abrir el archivo. Verifique que el formato sea compatible.',
+        onConfirm: null,
+        confirmText: 'Cerrar',
+      });
+    }
+  };
+
+  // Función para obtener el icono según el tipo de archivo
+  const getFileIcon = (nombre) => {
+    const extension = nombre?.split('.').pop()?.toLowerCase() || '';
+    
+    switch (extension) {
+      case 'pdf':
+        return <FiFileText style={{ ...styles.documentIcon, color: '#dc2626' }} />;
+      case 'doc':
+      case 'docx':
+        return <FiFileText style={{ ...styles.documentIcon, color: '#2563eb' }} />;
+      case 'xls':
+      case 'xlsx':
+        return <FiFileText style={{ ...styles.documentIcon, color: '#059669' }} />;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return <FiFileText style={{ ...styles.documentIcon, color: '#7c3aed' }} />;
+      default:
+        return <FiFileText style={styles.documentIcon} />;
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -348,33 +410,64 @@ const ResponseRegistration = () => {
                 Haz clic para seleccionar archivos
               </span>
               <span style={styles.uploadHint}>
-                PDF, DOC, DOCX, JPG, PNG, XLSX (Max 10MB por archivo)
+                PDF, DOC, DOCX, JPG, PNG, XLSX (Max 2MB por archivo)
               </span>
             </label>
           </div>
 
           {responseData.documentosSoporte.length > 0 && (
-            <div style={styles.filesList}>
-              <div style={styles.filesHeader}>
-                Archivos adjuntos ({responseData.documentosSoporte.length})
+            <div style={styles.documentsList}>
+              <div style={styles.documentsTitle}>
+                Documentos de Soporte ({responseData.documentosSoporte.length})
               </div>
-              {responseData.documentosSoporte.map((file) => (
-                <div key={file.id} style={styles.fileItem}>
-                  <div style={styles.fileInfo}>
-                    <span style={styles.fileName}>{file.nombre}</span>
-                    <span style={styles.fileSize}>{file.tamaño}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeFile(file.id)}
-                    style={styles.removeBtn}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "#fee2e2"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              {responseData.documentosSoporte.map((doc, index) => {
+                const esPdf = doc.nombre?.toLowerCase().endsWith('.pdf') || 
+                             doc.tipo === 'application/pdf';
+                
+                return (
+                  <div
+                    key={doc.id || index}
+                    style={{
+                      ...styles.documentCard,
+                      borderLeft: `4px solid ${esPdf ? '#dc2626' : '#3b82f6'}`
+                    }}
+                    onClick={() => handleDocumentClick(doc)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#f8fafc";
+                      e.currentTarget.style.borderColor = "#3b82f6";
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                      e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#ffffff";
+                      e.currentTarget.style.borderColor = "#e5e7eb";
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
                   >
-                    ×
-                  </button>
-                </div>
-              ))}
+                    {getFileIcon(doc.nombre)}
+                    <div style={styles.documentInfo}>
+                      <span style={styles.documentName}>
+                        {doc.nombre || `Documento ${index + 1}`}
+                      </span>
+                      {doc.tamaño && (
+                        <span style={styles.documentSize}>{doc.tamaño}</span>
+                      )}
+                    </div>
+                    <div style={styles.documentActions}>
+                      <FiExternalLink style={styles.actionIcon} title="Abrir en nueva pestaña" />
+                      <button
+                        type="button"
+                        onClick={(e) => removeFile(e, doc.id)}
+                        style={styles.removeIconBtn}
+                        title="Eliminar archivo"
+                      >
+                        <FiX style={styles.removeIcon} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -428,7 +521,7 @@ const ResponseRegistration = () => {
 const styles = {
   page: {
     width: "100%",
-    maxWidth: "100%", // prevent children from causing overflow wider than viewport
+    maxWidth: "100%",
     boxSizing: "border-box",
     margin: 0,
     padding: "1rem",
@@ -550,7 +643,6 @@ const styles = {
 
   field: {
     marginBottom: "1rem",
-
   },
 
   fieldLabel: {
@@ -662,62 +754,82 @@ const styles = {
     color: "#94a3b8",
   },
 
-  filesList: {
-    background: "#f8fafc",
-    border: "1px solid #e2e8f0",
-    borderRadius: 8,
-    padding: "1rem",
-  },
-
-  filesHeader: {
-    fontWeight: 700,
-    color: "#1e293b",
-    marginBottom: "0.75rem",
-    fontSize: "0.95rem",
-  },
-
-  fileItem: {
+  documentsList: {
     display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "10px 12px",
-    background: "#ffffff",
-    border: "1px solid #e2e8f0",
-    borderRadius: 6,
+    flexDirection: "column",
+    gap: "0.5rem",
+  },
+
+  documentsTitle: {
+    fontSize: "1.1rem",
+    fontWeight: "700",
+    color: "#000000",
     marginBottom: "0.5rem",
   },
 
-  fileInfo: {
+  documentCard: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.75rem",
+    padding: "0.75rem",
+    backgroundColor: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "0.5rem",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    borderLeft: "4px solid #3b82f6"
+  },
+
+  documentIcon: {
+    fontSize: "1.25rem",
+    color: "#6b7280",
+    flexShrink: 0
+  },
+
+  documentInfo: {
     display: "flex",
     flexDirection: "column",
-    gap: 4,
-    flex: 1,
+    gap: "0.25rem",
+    flex: 1
   },
 
-  fileName: {
-    fontSize: "0.9rem",
-    fontWeight: 600,
+  documentName: {
+    fontWeight: "600",
     color: "#000000",
+    fontSize: "0.9rem"
   },
 
-  fileSize: {
-    fontSize: "0.8rem",
-    color: "#000000",
+  documentSize: {
+    color: "#6b7280",
+    fontSize: "0.8rem"
   },
 
-  removeBtn: {
-    padding: "4px 8px",
+  documentActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem"
+  },
+
+  actionIcon: {
+    fontSize: "1rem",
+    color: "#6b7280"
+  },
+
+  removeIconBtn: {
+    padding: "4px",
     background: "transparent",
     border: "none",
     borderRadius: 4,
     cursor: "pointer",
-    color: "#dc2626",
-    fontSize: "1.5rem",
-    transition: "background 0.2s",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontWeight: 700,
+    transition: "background 0.2s",
+  },
+
+  removeIcon: {
+    fontSize: "1.25rem",
+    color: "#dc2626",
   },
 
   warning: {

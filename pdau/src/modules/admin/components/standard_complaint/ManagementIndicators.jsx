@@ -138,7 +138,16 @@ const ManagementIndicators = () => {
 
       {/* Historial de Indicadores */}
       <div style={styles.historySection}>
-        <h2 style={styles.sectionTitle}>Historial de Indicadores Generados</h2>
+        <div style={styles.sectionHeader}>
+          <h2 style={styles.sectionTitle}>
+            Historial de Indicadores Generados
+            {indicatorsHistory.length > 0 && (
+              <span style={styles.indicatorCount}>
+                ({indicatorsHistory.length})
+              </span>
+            )}
+          </h2>
+        </div>
         
         {indicatorsHistory.length === 0 ? (
           <div style={styles.emptyState}>
@@ -361,11 +370,24 @@ const styles = {
   historySection: {
     marginBottom: "2rem",
   },
+  sectionHeader: {
+    marginBottom: "1.5rem",
+  },
   sectionTitle: {
     fontSize: "1.5rem",
     fontWeight: "600",
-    color: "#1f2937",
-    marginBottom: "1.5rem",
+    color: "#000000",
+    marginBottom: "0",
+    display: "flex",
+    alignItems: "center",
+    gap: "0rem",
+  },
+  indicatorCount: {
+    fontSize: "1rem",
+    fontWeight: "normal",
+    color: "#000000",
+    padding: "0.25rem 0.75rem",
+    alignItems: "center",
   },
   emptyState: {
     display: "flex",

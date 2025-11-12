@@ -13,37 +13,47 @@ const ComplaintSidebarActions = ({
   onShowHistory,
   onArchive,
   stateChanges,
-}) => (
-  <div style={styles.container}>
-    <ComplaintSidebar>
-      <SidebarCategories categorias={categorias} />
-      <SidebarFiles files={files} />
-      <SidebarState estado={estado} />
-      <Button
-        text="Cambiar estado"
-        className="bg-red-600 hover:bg-red-700 text-white"
-        onClick={onChangeState}
-      />
-      {stateChanges.length > 0 && (
+}) => {
+  // Determinar si el botón debe estar deshabilitado
+  const isStateChangeDisabled = estado?.nombre === "Resuelta";
+  
+  return (
+    <div style={styles.container}>
+      <ComplaintSidebar>
+        <SidebarCategories categorias={categorias} />
+        <SidebarFiles files={files} />
+        <SidebarState estado={estado} />
         <Button
-          text="Historial de cambio de estado"
-          className="bg-gray-200 hover:bg-gray-400 text-black"
-          onClick={onShowHistory}
+          text={isStateChangeDisabled ? "Estado Resuelto (Bloqueado)" : "Cambiar estado"}
+          className={
+            isStateChangeDisabled 
+              ? "bg-gray-400 cursor-not-allowed text-white" 
+              : "bg-red-600 hover:bg-red-700 text-white"
+          }
+          onClick={isStateChangeDisabled ? undefined : onChangeState}
+          disabled={isStateChangeDisabled}
         />
-      )}
-      <Button
-        text={
-          <span style={styles.archiveButtonContent}>
-            <img src="/img/file.png" alt="Archivo" style={styles.archiveIcon} />
-            Archivar denuncia
-          </span>
-        }
-        className="bg-gray-200 hover:bg-gray-400 text-red-600"
-        onClick={onArchive}
-      />
-    </ComplaintSidebar>
-  </div>
-);
+        {stateChanges.length > 0 && (
+          <Button
+            text="Historial de cambio de estado"
+            className="bg-gray-200 hover:bg-gray-400 text-black"
+            onClick={onShowHistory}
+          />
+        )}
+        <Button
+          text={
+            <span style={styles.archiveButtonContent}>
+              <img src="/img/file.png" alt="Archivo" style={styles.archiveIcon} />
+              Archivar denuncia
+            </span>
+          }
+          className="bg-gray-200 hover:bg-gray-400 text-red-600"
+          onClick={onArchive}
+        />
+      </ComplaintSidebar>
+    </div>
+  );
+};
 
 const styles = {
   container: {

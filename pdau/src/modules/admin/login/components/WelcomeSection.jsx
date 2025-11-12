@@ -9,20 +9,74 @@ import {
   FiShield,
   FiArrowRight
 } from "react-icons/fi";
+import ComplaintService from "../../../../services/ComplaintService";
+import ManagementIndicatorService from "../../../../services/ManagementIndicatorService";
 
 const WelcomeSection = () => {
   const adminData = JSON.parse(localStorage.getItem("admin"));
   const adminName = adminData?.nombre || "Administrador";
+  const [stats, setStats] = React.useState([
+    { icon: FiTrendingUp, number: "-", label: "Denuncias nuevas (24h)", color: "#4f46e5" },
+    { icon: FiFileText, number: "-", label: "Denuncias totales", color: "#10b981" },
+    { icon: FiFileText, number: "-", label: "Reportes pendientes", color: "#06b6d4" },
+    { icon: FiBarChart2, number: "-", label: "Estadísticas generadas", color: "#f59e0b" },
+  ]);
 
-  const stats = [
-    { icon: FiTrendingUp, number: "24", label: "Denuncias nuevas", color: "#4f46e5" },
-    { icon: FiFileText, number: "3", label: "Reportes pendientes", color: "#10b981" },
-    { icon: FiBarChart2, number: "12", label: "Estadísticas generadas", color: "#f59e0b" }
-  ];
+  // Cargar estadísticas reales desde backend
+  React.useEffect(() => {
+    let mounted = true;
+    const loadStats = async () => {
+      try {
+        // Obtener todas las denuncias y los indicadores
+        const [complaintsResp, indicators] = await Promise.all([
+          ComplaintService.getAllComplaints(),
+          ManagementIndicatorService.getIndicatorsHistory(),
+        ]);
+
+        const complaints = Array.isArray(complaintsResp) ? complaintsResp : (complaintsResp?.data || []);
+
+        // Total
+        const total = complaints.length;
+
+        // Nuevas en últimas 24 horas
+        const now = Date.now();
+        const last24 = complaints.filter((c) => {
+          const fecha = c.fechaCreacion || c.createdAt || c.fecha || null;
+          if (!fecha) return false;
+          const t = new Date(fecha).getTime();
+          if (isNaN(t)) return false;
+          return now - t <= 24 * 60 * 60 * 1000;
+        }).length;
+
+        // Reportes pendientes: heurística por estado
+        const pendingKeywords = ["revisión", "pendiente", "por atender", "en revisión"];
+        const pendingCount = complaints.filter((c) => {
+          const name = (c.estado?.nombre || "").toString().toLowerCase();
+          return pendingKeywords.some((k) => name.includes(k));
+        }).length;
+
+        const indicatorsCount = Array.isArray(indicators) ? indicators.length : (indicators?.length || 0);
+
+        if (!mounted) return;
+        setStats([
+          { icon: FiTrendingUp, number: String(last24), label: `Denuncias nuevas (24h)`, color: "#4f46e5" },
+          { icon: FiFileText, number: String(total), label: `Denuncias totales`, color: "#10b981" },
+          { icon: FiFileText, number: String(pendingCount), label: `Reportes pendientes`, color: "#06b6d4" },
+          { icon: FiBarChart2, number: String(indicatorsCount), label: `Estadísticas generadas`, color: "#f59e0b" },
+        ]);
+      } catch (err) {
+        console.error("Error cargando estadísticas del dashboard:", err);
+      } finally {
+        // nothing to cleanup here
+      }
+    };
+    loadStats();
+    return () => { mounted = false; };
+  }, []);
 
   const features = [
     { icon: FiUsers, text: "Gestión de denuncias", description: "Supervisa y gestiona denuncias anónimas del sistema", path: '/read_complaint' },
-    { icon: FiSettings, text: "Generar estadísticas", description: "Visualiza y analiza datos relevantes del sistema", path: '/generate_statistics' },
+    { icon: FiSettings, text: "Generar estadísticas", description: "Visualiza y analiza datos relevantes del sistema", path: '/statistics' },
     { icon: FiShield, text: "Archivos y reportes", description: "Genera reportes y administra documentación" }
   ];
 

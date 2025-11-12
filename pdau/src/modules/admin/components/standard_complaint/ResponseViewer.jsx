@@ -1,6 +1,137 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { FiFileText, FiExternalLink } from 'react-icons/fi';
 
 const ResponseViewer = ({ response }) => {
+  const [documentosConUrl, setDocumentosConUrl] = useState([]);
+  const [temporaryUrls, setTemporaryUrls] = useState(new Set());
+
+  // Limpiar URLs temporales cuando el componente se desmonte
+  useEffect(() => {
+    return () => {
+      temporaryUrls.forEach(url => {
+        window.URL.revokeObjectURL(url);
+      });
+    };
+  }, [temporaryUrls]);
+
+  // Procesar documentos cuando cambia la respuesta
+  useEffect(() => {
+    const procesarDocumentos = async () => {
+      if (!response) return;
+
+      const docs = response.documentosSoporte || response.archivosAdjuntos || [];
+      if (docs.length === 0) {
+        setDocumentosConUrl([]);
+        return;
+      }
+
+      const BASE_RESPUESTAS_URL = import.meta.env.VITE_RESPUESTAS_API_URL || '';
+      const documentosProcesados = [];
+
+      for (const doc of docs) {
+        try {
+          // Verificar si el documento tiene datos binarios
+          const tieneDatosBinarios = doc.datos && 
+            (Array.isArray(doc.datos) || 
+             (typeof doc.datos === 'string' && doc.datos.length > 100));
+
+          if (tieneDatosBinarios) {
+            console.log(`Procesando archivo binario: ${doc.nombre}`);
+
+            // CONVERTIR BINARIOS A BLOB Y LUEGO A URL
+            let blob;
+            
+            if (Array.isArray(doc.datos)) {
+              // Si es array de números (bytes)
+              const byteArray = new Uint8Array(doc.datos);
+              blob = new Blob([byteArray], { 
+                type: doc.tipoContenido || 'application/pdf' 
+              });
+            } else if (typeof doc.datos === 'string') {
+              // Si es string (posiblemente base64 o hexadecimal)
+              if (doc.datos.startsWith('0×')) {
+                // Formato hexadecimal
+                const hexString = doc.datos.substring(2);
+                const bytes = new Uint8Array(hexString.length / 2);
+                for (let i = 0; i < bytes.length; i++) {
+                  bytes[i] = parseInt(hexString.substr(i * 2, 2), 16);
+                }
+                blob = new Blob([bytes], { 
+                  type: doc.tipoContenido || 'application/pdf' 
+                });
+              } else {
+                // Intentar como base64
+                try {
+                  const binaryString = atob(doc.datos);
+                  const bytes = new Uint8Array(binaryString.length);
+                  for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                  }
+                  blob = new Blob([bytes], { 
+                    type: doc.tipoContenido || 'application/pdf' 
+                  });
+                } catch (e) {
+                  console.error('Error procesando como base64:', e);
+                  continue;
+                }
+              }
+            }
+
+            if (blob) {
+              const url = window.URL.createObjectURL(blob);
+              
+              // Guardar la URL temporal para limpiar después
+              setTemporaryUrls(prev => new Set([...prev, url]));
+              
+              documentosProcesados.push({
+                id: doc.id || `doc-${documentosProcesados.length}`,
+                nombre: doc.nombre || doc.nombreArchivo || `Documento ${documentosProcesados.length + 1}`,
+                url: url,
+                tipoContenido: doc.tipoContenido || 'application/pdf',
+                tamaño: `(${Math.round(blob.size / 1024)} KB)`,
+                esTemporal: true
+              });
+              
+              console.log(`Archivo convertido exitosamente: ${doc.nombre}`);
+            }
+          } else {
+            // Si no tiene datos binarios, usar URL normal
+            const rawUrl = doc.url || doc.ruta || doc.urlArchivo || doc.fileUrl || doc.path || '';
+
+            let normalizedUrl = rawUrl || '';
+            if (normalizedUrl) {
+              const trimmed = String(normalizedUrl).trim();
+              if (/^https?:\/\//i.test(trimmed)) {
+                normalizedUrl = trimmed;
+              } else if (trimmed.startsWith('/')) {
+                normalizedUrl = BASE_RESPUESTAS_URL ? 
+                  `${BASE_RESPUESTAS_URL.replace(/\/+$/, '')}${trimmed}` : trimmed;
+              } else {
+                normalizedUrl = BASE_RESPUESTAS_URL ? 
+                  `${BASE_RESPUESTAS_URL.replace(/\/+$/, '')}/${trimmed}` : trimmed;
+              }
+            }
+
+            documentosProcesados.push({
+              id: doc.id || `doc-${documentosProcesados.length}`,
+              nombre: doc.nombre || doc.nombreArchivo || `Documento ${documentosProcesados.length + 1}`,
+              url: normalizedUrl,
+              tipoContenido: doc.tipoContenido,
+              tamaño: doc.tamano || doc.tamaño || doc.size || undefined
+            });
+          }
+        } catch (error) {
+          console.error(`Error procesando documento ${doc.nombre}:`, error);
+        }
+      }
+
+      console.log('Documentos procesados:', documentosProcesados);
+      setDocumentosConUrl(documentosProcesados);
+    };
+
+    procesarDocumentos();
+  }, [response]);
+
   if (!response) {
     return (
       <div style={styles.noResponse}>
@@ -41,7 +172,7 @@ const ResponseViewer = ({ response }) => {
       const startDate = new Date(response.fechaRespuesta);
       if (isNaN(startDate.getTime())) return "Fecha inválida";
 
-      const daysToAdd = response.diasApelacion || 5; // Default a 5 días si no está definido
+      const daysToAdd = response.diasApelacion || 5;
       const deadline = new Date(startDate);
       deadline.setDate(deadline.getDate() + daysToAdd);
       
@@ -56,7 +187,7 @@ const ResponseViewer = ({ response }) => {
     }
   };
 
-  // Buscar el detalle de la respuesta en diferentes propiedades posibles
+  // Buscar el detalle de la respuesta
   const getResponseDetail = () => {
     return response.detalleRespuesta || 
            response.detalle || 
@@ -73,6 +204,40 @@ const ResponseViewer = ({ response }) => {
         : response.administrador;
     }
     return response.administradorResponsable || "No especificado";
+  };
+
+  // Función para manejar el clic en un documento
+  const handleDocumentClick = (doc) => {
+    if (!doc.url) {
+      console.warn('Documento sin URL:', doc);
+      return;
+    }
+
+    console.log('Abriendo documento:', doc);
+    window.open(doc.url, '_blank', 'noopener,noreferrer');
+  };
+
+  // Función para obtener el icono según el tipo de archivo
+  const getFileIcon = (nombre) => {
+    const extension = nombre?.split('.').pop()?.toLowerCase() || '';
+    
+    switch (extension) {
+      case 'pdf':
+        return <FiFileText style={{ ...styles.documentIcon, color: '#dc2626' }} />;
+      case 'doc':
+      case 'docx':
+        return <FiFileText style={{ ...styles.documentIcon, color: '#2563eb' }} />;
+      case 'xls':
+      case 'xlsx':
+        return <FiFileText style={{ ...styles.documentIcon, color: '#059669' }} />;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return <FiFileText style={{ ...styles.documentIcon, color: '#7c3aed' }} />;
+      default:
+        return <FiFileText style={styles.documentIcon} />;
+    }
   };
 
   return (
@@ -107,35 +272,72 @@ const ResponseViewer = ({ response }) => {
         </div>
       </div>
 
-      {/* Mostrar documentos de soporte si existen */}
-      {(response.documentosSoporte && response.documentosSoporte.length > 0) ||
-       (response.archivosAdjuntos && response.archivosAdjuntos.length > 0) ? (
+      {/* Mostrar documentos de soporte con el nuevo diseño */}
+      {documentosConUrl && documentosConUrl.length > 0 ? (
         <div style={styles.section}>
           <h4 style={styles.sectionTitle}>
-            Documentos de Soporte ({response.documentosSoporte?.length || response.archivosAdjuntos?.length})
+            Documentos de Soporte ({documentosConUrl.length})
           </h4>
-          <div style={styles.documentsGrid}>
-            {(response.documentosSoporte || response.archivosAdjuntos || []).map((doc, index) => (
-              <a
-                key={doc.id || index}
-                href={doc.url || doc.ruta}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={styles.documentCard}
-                onMouseEnter={(e) => e.currentTarget.style.background = "#f9fafb"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "#ffffff"}
-              >
-                <svg style={styles.docIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <div style={styles.documentInfo}>
-                  <span style={styles.documentName}>{doc.nombre || doc.nombreArchivo || "Documento sin nombre"}</span>
-                  {doc.tamaño && (
-                    <span style={styles.documentSize}>{doc.tamaño}</span>
-                  )}
+          <div style={styles.documentsList}>
+            {documentosConUrl.map((doc, index) => {
+              const isAvailable = doc.url;
+              const esPdf = doc.nombre?.toLowerCase().endsWith('.pdf') || 
+                           doc.tipoContenido === 'application/pdf';
+              
+              return (
+                <div
+                  key={doc.id || index}
+                  style={{
+                    ...styles.documentCard,
+                    cursor: isAvailable ? 'pointer' : 'default',
+                    opacity: isAvailable ? 1 : 0.7,
+                    borderLeft: `4px solid ${esPdf ? '#dc2626' : '#3b82f6'}`
+                  }}
+                  onClick={() => isAvailable && handleDocumentClick(doc)}
+                  onMouseEnter={(e) => {
+                    if (isAvailable) {
+                      e.currentTarget.style.backgroundColor = "#f8fafc";
+                      e.currentTarget.style.borderColor = "#3b82f6";
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                      e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#ffffff";
+                    e.currentTarget.style.borderColor = "#e5e7eb";
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.05)";
+                  }}
+                >
+                  {getFileIcon(doc.nombre)}
+                  <div style={styles.documentInfo}>
+                    <span style={styles.documentName}>
+                      {doc.nombre || `Documento ${index + 1}`}
+                      {doc.esTemporal && (
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          color: '#f59e0b', 
+                          marginLeft: '0.5rem',
+                          fontWeight: 'normal'
+                        }}>
+                          (convertido)
+                        </span>
+                      )}
+                    </span>
+                    {doc.tamaño && (
+                      <span style={styles.documentSize}>{doc.tamaño}</span>
+                    )}
+                  </div>
+                  <div style={styles.documentActions}>
+                    {isAvailable ? (
+                      <FiExternalLink style={styles.actionIcon} title="Abrir en nueva pestaña" />
+                    ) : (
+                      <span style={styles.unavailableText}>No disponible</span>
+                    )}
+                  </div>
                 </div>
-              </a>
-            ))}
+              );
+            })}
           </div>
         </div>
       ) : null}
@@ -286,49 +488,66 @@ const styles = {
     minHeight: "80px",
   },
 
-  documentsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-    gap: "0.75rem",
+  documentsList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.5rem",
   },
 
   documentCard: {
     display: "flex",
     alignItems: "center",
     gap: "0.75rem",
-    padding: "1rem",
-    background: "#ffffff",
+    padding: "0.75rem",
+    backgroundColor: "#ffffff",
     border: "1px solid #e5e7eb",
-    borderRadius: 8,
-    textDecoration: "none",
-    transition: "background 0.2s, box-shadow 0.2s",
+    borderRadius: "0.5rem",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    borderLeft: "4px solid #3b82f6",
     boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
   },
 
-  docIcon: {
-    width: 32,
-    height: 32,
-    color: "#3b82f6",
-    flexShrink: 0,
+  documentIcon: {
+    fontSize: "1.25rem",
+    color: "#6b7280",
+    flexShrink: 0
   },
 
   documentInfo: {
     display: "flex",
     flexDirection: "column",
     gap: "0.25rem",
-    flex: 1,
+    flex: 1
   },
 
   documentName: {
+    fontWeight: "600",
+    color: "#000000",
     fontSize: "0.9rem",
-    fontWeight: 600,
-    color: "#1e293b",
     wordBreak: "break-word",
   },
 
   documentSize: {
+    color: "#6b7280",
+    fontSize: "0.8rem"
+  },
+
+  documentActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem"
+  },
+
+  actionIcon: {
+    fontSize: "1rem",
+    color: "#6b7280"
+  },
+
+  unavailableText: {
+    color: "#9ca3af",
     fontSize: "0.8rem",
-    color: "#64748b",
+    fontStyle: "italic"
   },
 
   appealBox: {
