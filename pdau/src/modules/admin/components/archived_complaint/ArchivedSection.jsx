@@ -1,18 +1,19 @@
+// ArchivedSection.jsx - CORREGIDO
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiFilter, FiFileText } from "react-icons/fi";
 import ComplaintService from "../../../../services/ComplaintService";
+import FileComplaintService from "../../../../services/FileComplaintService";
 import ListContainer from "../../../../components/ListContainer";
 
 const ArchivedSection = () => {
   const [complaints, setComplaints] = useState([]);
   const [filteredComplaints, setFilteredComplaints] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [departamentos, setDepartamentos] = useState([]);
   const [estados, setEstados] = useState([]);
+  const [archivingDates, setArchivingDates] = useState({});
 
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
-  const [selectedDepartamentoId, setSelectedDepartamentoId] = useState("");
   const [selectedEstadoId, setSelectedEstadoId] = useState("");
   const [keyword, setKeyword] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
@@ -23,31 +24,57 @@ const ArchivedSection = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const complaintsData = await ComplaintService.getArchivedComplaints();
-        const categoriesData = await ComplaintService.getAllCategories();
-        const departamentosData = await ComplaintService.getAllDepartamentos();
-        const estadosData = ComplaintService.getEstados
-          ? await ComplaintService.getEstados()
-          : [];
-        setComplaints(complaintsData);
-        setFilteredComplaints(complaintsData);
-        setCategories(categoriesData);
-        setDepartamentos(departamentosData);
-        setEstados(estadosData);
+        setLoading(true);
+        setError(null);
+
+        const [complaintsData, categoriesData, estadosData] = await Promise.all([
+          ComplaintService.getArchivedComplaints(),
+          ComplaintService.getAllCategories(),
+          ComplaintService.getEstados()
+        ]);
+
+        const complaintsArray = Array.isArray(complaintsData) ? complaintsData : [];
+        
+        setComplaints(complaintsArray);
+        setFilteredComplaints(complaintsArray);
+        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+        setEstados(Array.isArray(estadosData) ? estadosData : []);
+
+        // Obtener fechas de archivamiento
+        const dates = {};
+        for (const complaint of complaintsArray) {
+          try {
+            const history = await FileComplaintService.getArchivingHistory(complaint.id);
+            if (history && history.length > 0) {
+              // ✅ CAMPO CORRECTO: fechaArchivado
+              dates[complaint.id] = history[0].fechaArchivado;
+            }
+          } catch (err) {
+            console.warn(`No se pudo obtener fecha para denuncia ${complaint.id}`);
+          }
+        }
+        setArchivingDates(dates);
+
       } catch (err) {
-        console.error("Error al cargar:", err);
+        console.error("Error al cargar denuncias archivadas:", err);
+        setError("Error al cargar las denuncias archivadas.");
+        setComplaints([]);
+        setFilteredComplaints([]);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
   }, []);
 
-  /* ---------------- Filtros ---------------- */
   const toggleFilterModal = () => {
     if (!isFilterModalOpen) {
       setShowModal(true);
@@ -62,31 +89,35 @@ const ArchivedSection = () => {
     try {
       let filtered = complaints;
 
-      if (selectedDepartamentoId) {
-        filtered = filtered.filter(
-          (c) => String(c.departamento?.id) === selectedDepartamentoId
-        );
-      }
       if (selectedCategoryId) {
         filtered = filtered.filter((c) =>
           c.categorias?.some((cat) => String(cat.id) === selectedCategoryId)
         );
       }
+
       if (selectedEstadoId) {
         filtered = filtered.filter(
           (c) => String(c.estado?.id) === selectedEstadoId
         );
       }
+
       if (keyword) {
         filtered = filtered.filter((c) =>
           c.titulo.toLowerCase().includes(keyword.toLowerCase())
         );
       }
+
       if (fechaInicio) {
-        filtered = filtered.filter((c) => c.fechaCreacion >= fechaInicio);
+        filtered = filtered.filter((c) => {
+          const complaintDate = new Date(c.fechaCreacion).toISOString().split('T')[0];
+          return complaintDate >= fechaInicio;
+        });
       }
       if (fechaFin) {
-        filtered = filtered.filter((c) => c.fechaCreacion <= fechaFin);
+        filtered = filtered.filter((c) => {
+          const complaintDate = new Date(c.fechaCreacion).toISOString().split('T')[0];
+          return complaintDate <= fechaFin;
+        });
       }
 
       setFilteredComplaints(filtered);
@@ -97,7 +128,16 @@ const ArchivedSection = () => {
     }
   };
 
-  /* --------------- Paginación --------------- */
+  const clearFilters = () => {
+    setSelectedCategoryId("");
+    setSelectedEstadoId("");
+    setKeyword("");
+    setFechaInicio("");
+    setFechaFin("");
+    setFilteredComplaints(complaints);
+    setCurrentPage(1);
+  };
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentComplaints = filteredComplaints.slice(
@@ -107,40 +147,101 @@ const ArchivedSection = () => {
 
   const handlePageChange = (page) => setCurrentPage(page);
 
-  /* ----------------- Utils ------------------ */
   const formatDate = (dateString) => {
-    if (!dateString) return "-";
+    if (!dateString) return "N/A";
     const d = new Date(dateString);
-    if (Number.isNaN(d.getTime())) return "-";
+    if (isNaN(d.getTime())) return "Fecha inválida";
+    
     const dd = String(d.getDate()).padStart(2, "0");
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const yyyy = d.getFullYear();
     return `${dd}/${mm}/${yyyy}`;
   };
 
-  const archivedDateOf = (c) =>
-    c.fechaArchivamiento || c.fechaArchivado || c.fechaActualizacion || null;
+  const getArchivedDate = (complaint) => {
+    // Primero verificar si tenemos la fecha en el estado
+    if (archivingDates[complaint.id]) {
+      return archivingDates[complaint.id];
+    }
 
-  /* ---------------- Render ------------------ */
-  return (
-    <div style={styles.page}>
-      <style>{`@keyframes modalIn { from { opacity:.4; transform: translateY(6px) } to { opacity:1; transform: translateY(0) } }`}</style>
+    // Fallback: buscar en la denuncia misma
+    const possibleFields = [
+      'fechaArchivado',  // ✅ Primero este
+      'fechaArchivamiento',
+      'fechaActualizacion',
+      'updatedAt'
+    ];
+    
+    for (let field of possibleFields) {
+      if (complaint[field]) {
+        return complaint[field];
+      }
+    }
+    
+    return null;
+  };
 
-      {/* Botón filtros anclado a la derecha (sticky) */}
-      <div style={styles.rightDock}>
-        <button
-          onClick={toggleFilterModal}
-          style={styles.filterBtn}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#e5e7eb")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#f3f4f6")}
-          type="button"
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <div style={styles.loadingText}>Cargando denuncias archivadas...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={styles.errorContainer}>
+        <div style={styles.errorText}>{error}</div>
+        <button 
+          onClick={() => window.location.reload()} 
+          style={styles.retryButton}
         >
-          <span>Aplicar filtros de búsqueda</span>
-          <FiFilter size={18} />
+          Reintentar
         </button>
       </div>
+    );
+  }
 
-      {/* Tabla: ancho completo */}
+  return (
+    <div style={styles.page}>
+      <style>{`
+        @keyframes modalIn { from { opacity:.4; transform: translateY(6px) } to { opacity:1; transform: translateY(0) } }
+        .complaints-date-input::-webkit-calendar-picker-indicator {
+          transform: translateX(50px);
+        }
+      `}</style>
+
+      <div style={styles.rightDock}>
+        <div style={styles.filterButtons}>
+          <button
+            onClick={toggleFilterModal}
+            style={styles.filterBtn}
+            type="button"
+          >
+            <span>Aplicar filtros de búsqueda</span>
+            <FiFilter size={18} />
+          </button>
+          
+          {(selectedCategoryId || selectedEstadoId || keyword || fechaInicio || fechaFin) && (
+            <button
+              onClick={clearFilters}
+              style={styles.clearFilterBtn}
+              type="button"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div style={styles.resultsInfo}>
+        Mostrando {filteredComplaints.length} de {complaints.length} denuncias archivadas
+        {(selectedCategoryId || selectedEstadoId || keyword || fechaInicio || fechaFin) && (
+          <span style={styles.filteredInfo}> (filtradas)</span>
+        )}
+      </div>
+
       <ListContainer
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
@@ -153,9 +254,7 @@ const ArchivedSection = () => {
               <tr>
                 <th style={{ ...styles.th, width: "45%" }}>Título de denuncia</th>
                 <th style={{ ...styles.th, width: "18%" }}>Fecha de realización</th>
-                <th style={{ ...styles.th, width: "18%" }}>
-                  Fecha de archivamiento
-                </th>
+                <th style={{ ...styles.th, width: "18%" }}>Fecha de archivamiento</th>
                 <th style={{ ...styles.th, width: "19%", textAlign: "center" }}>
                   Acciones
                 </th>
@@ -166,9 +265,8 @@ const ArchivedSection = () => {
                 <tr key={c.id} style={styles.tr}>
                   <td
                     style={styles.tdTitle}
-                    title={c.titulo}
                     onClick={() =>
-                      navigate("/archived_complaint", {
+                      navigate("/archived_checkout", {
                         state: { complaintId: c.id },
                       })
                     }
@@ -176,13 +274,13 @@ const ArchivedSection = () => {
                     {c.titulo}
                   </td>
                   <td style={styles.td}>{formatDate(c.fechaCreacion)}</td>
-                  <td style={styles.td}>{formatDate(archivedDateOf(c))}</td>
+                  <td style={styles.td}>{formatDate(getArchivedDate(c))}</td>
                   <td style={{ ...styles.td, textAlign: "center" }}>
                     <button
                       style={styles.linkBtn}
                       type="button"
                       onClick={() =>
-                        navigate("/archived_complaint", {
+                        navigate("/archived_checkout", {
                           state: { complaintId: c.id },
                         })
                       }
@@ -196,7 +294,10 @@ const ArchivedSection = () => {
               {currentComplaints.length === 0 && (
                 <tr>
                   <td colSpan={4} style={styles.emptyCell}>
-                    No hay resultados para los filtros aplicados.
+                    {complaints.length === 0 
+                      ? "No hay denuncias archivadas." 
+                      : "No hay resultados para los filtros aplicados."
+                    }
                   </td>
                 </tr>
               )}
@@ -205,7 +306,6 @@ const ArchivedSection = () => {
         </div>
       </ListContainer>
 
-      {/* Modal filtros */}
       {showModal && (
         <div
           style={styles.backdrop}
@@ -220,23 +320,7 @@ const ArchivedSection = () => {
               opacity: isFilterModalOpen ? 1 : 0,
             }}
           >
-            <h2 style={styles.modalTitle}>Filtrar denuncias</h2>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Departamento</label>
-              <select
-                value={selectedDepartamentoId}
-                onChange={(e) => setSelectedDepartamentoId(e.target.value)}
-                style={styles.select}
-              >
-                <option value="">Todos</option>
-                {departamentos.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <h2 style={styles.modalTitle}>Filtrar denuncias archivadas</h2>
 
             <div style={styles.field}>
               <label style={styles.label}>Categoría</label>
@@ -278,16 +362,10 @@ const ArchivedSection = () => {
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 style={styles.keywordInput}
-                onFocus={(e) =>
-                  Object.assign(e.currentTarget.style, styles.keywordInputFocus)
-                }
-                onBlur={(e) =>
-                  Object.assign(e.currentTarget.style, styles.keywordInput)
-                }
               />
             </div>
 
-            <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ display: "flex", gap: 10 }}>
               <div style={{ ...styles.field, flex: 1 }}>
                 <label style={styles.label}>Fecha desde</label>
                 <input
@@ -295,12 +373,7 @@ const ArchivedSection = () => {
                   value={fechaInicio}
                   onChange={(e) => setFechaInicio(e.target.value)}
                   style={styles.dateInput}
-                  onFocus={(e) =>
-                    Object.assign(e.currentTarget.style, styles.dateInputFocus)
-                  }
-                  onBlur={(e) =>
-                    Object.assign(e.currentTarget.style, styles.dateInput)
-                  }
+                  className="complaints-date-input"
                 />
               </div>
               <div style={{ ...styles.field, flex: 1 }}>
@@ -310,17 +383,19 @@ const ArchivedSection = () => {
                   value={fechaFin}
                   onChange={(e) => setFechaFin(e.target.value)}
                   style={styles.dateInput}
-                  onFocus={(e) =>
-                    Object.assign(e.currentTarget.style, styles.dateInputFocus)
-                  }
-                  onBlur={(e) =>
-                    Object.assign(e.currentTarget.style, styles.dateInput)
-                  }
+                  className="complaints-date-input"
                 />
               </div>
             </div>
 
             <div style={styles.modalActions}>
+              <button
+                type="button"
+                onClick={clearFilters}
+                style={styles.btnClear}
+              >
+                Limpiar
+              </button>
               <button
                 type="button"
                 onClick={toggleFilterModal}
@@ -339,9 +414,7 @@ const ArchivedSection = () => {
   );
 };
 
-/* ================== ESTILOS ================== */
 const styles = {
-  // Área de contenido: ocupa todo el ancho restante (deja sidebar 260px)
   page: {
     width: "100%",
     boxSizing: "border-box",
@@ -350,18 +423,37 @@ const styles = {
     flexDirection: "column",
     background: "#fff",
   },
-
-  title: {
-    fontFamily: "'Inter','Segoe UI', Arial, sans-serif",
-    fontSize: "3rem",
-    fontWeight: 900,
-    color: "#0f172a",
-    margin: "0 0 1rem 0",
-    textAlign: "center",
-    lineHeight: 1.1,
+  loadingContainer: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "200px",
   },
-
-  // Dock derecho: botón sticky
+  loadingText: {
+    fontSize: "1.1rem",
+    color: "#000000",
+  },
+  errorContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "200px",
+    gap: "1rem",
+  },
+  errorText: {
+    fontSize: "1.1rem",
+    color: "#dc2626",
+    textAlign: "center",
+  },
+  retryButton: {
+    padding: "0.5rem 1rem",
+    backgroundColor: "#2563eb",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
   rightDock: {
     alignSelf: "flex-end",
     position: "sticky",
@@ -369,12 +461,15 @@ const styles = {
     zIndex: 5,
     marginBottom: "0.9rem",
   },
-
+  filterButtons: {
+    display: "flex",
+    gap: "10px",
+    alignItems: "center",
+  },
   filterBtn: {
     display: "inline-flex",
     alignItems: "center",
     gap: 10,
-    marginBottom: 15,
     padding: "10px 14px",
     background: "#f3f4f6",
     color: "#111827",
@@ -384,8 +479,24 @@ const styles = {
     fontWeight: 700,
     cursor: "pointer",
   },
-
-  // Tabla full width
+  clearFilterBtn: {
+    padding: "10px 14px",
+    background: "#fef2f2",
+    color: "#dc2626",
+    border: "1px solid #fecaca",
+    borderRadius: 12,
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  resultsInfo: {
+    marginBottom: "1rem",
+    fontSize: "0.9rem",
+    color: "#6b7280",
+  },
+  filteredInfo: {
+    color: "#2563eb",
+    fontWeight: "600",
+  },
   tableWrapper: {
     width: "100%",
     border: "1px solid #9ca3af",
@@ -394,14 +505,12 @@ const styles = {
     boxShadow: "0 6px 18px rgba(2,6,23,.06)",
     background: "#fff",
   },
-
   table: {
     width: "100%",
     borderCollapse: "collapse",
     tableLayout: "fixed",
     fontFamily: "'Inter','Segoe UI', Arial, sans-serif",
   },
-
   th: {
     textAlign: "left",
     padding: "12px 14px",
@@ -411,9 +520,9 @@ const styles = {
     fontSize: "0.98rem",
     borderBottom: "1px solid #9ca3af",
   },
-
-  tr: { borderBottom: "1px solid #d1d5db" },
-
+  tr: {
+    borderBottom: "1px solid #d1d5db",
+  },
   td: {
     padding: "12px 14px",
     fontSize: "0.98rem",
@@ -422,7 +531,6 @@ const styles = {
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
-
   tdTitle: {
     padding: "12px 14px",
     fontSize: "1rem",
@@ -433,7 +541,6 @@ const styles = {
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
-
   linkBtn: {
     display: "inline-flex",
     alignItems: "center",
@@ -445,14 +552,11 @@ const styles = {
     cursor: "pointer",
     textDecoration: "none",
   },
-
   emptyCell: {
     padding: "18px 12px",
     textAlign: "center",
     color: "#6b7280",
   },
-
-  /* ----- Modal ----- */
   backdrop: {
     position: "fixed",
     inset: 0,
@@ -501,8 +605,6 @@ const styles = {
     fontSize: "0.95rem",
     background: "#fff",
   },
-
-  // Inputs (palabras clave y fechas)
   keywordInput: {
     width: "100%",
     height: "44px",
@@ -515,19 +617,13 @@ const styles = {
     border: "1px solid #cbd5e1",
     borderRadius: 12,
     outline: "none",
-    transition: "border-color .18s ease, box-shadow .18s ease",
-    boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
-  },
-  keywordInputFocus: {
-    borderColor: "#2563eb",
-    boxShadow: "0 0 0 3px rgba(37,99,235,0.15)",
   },
   dateInput: {
     width: "100%",
     height: "44px",
     boxSizing: "border-box",
     padding: "0 14px 0 14px",
-    paddingRight: "40px",
+    paddingRight: "64px",
     fontSize: "0.95rem",
     fontWeight: 500,
     color: "#0f172a",
@@ -535,22 +631,22 @@ const styles = {
     border: "1px solid #cbd5e1",
     borderRadius: 12,
     outline: "none",
-    transition: "border-color .18s ease, box-shadow .18s ease",
-    boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
-    appearance: "none",
-    WebkitAppearance: "none",
-    MozAppearance: "textfield",
   },
-  dateInputFocus: {
-    borderColor: "#2563eb",
-    boxShadow: "0 0 0 3px rgba(37,99,235,0.15)",
-  },
-
   modalActions: {
     marginTop: 8,
     display: "flex",
     justifyContent: "flex-end",
     gap: 10,
+  },
+  btnClear: {
+    padding: "10px 14px",
+    background: "#fef2f2",
+    color: "#dc2626",
+    border: "1px solid #fecaca",
+    borderRadius: 12,
+    fontWeight: 700,
+    cursor: "pointer",
+    marginRight: "auto",
   },
   btnSecondary: {
     padding: "10px 14px",

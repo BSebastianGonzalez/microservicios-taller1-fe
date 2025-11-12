@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import CategoryStatisticsService from "../../../../services/CategoryStatisticsService";
+import ComplaintService from "../../../../services/ComplaintService";
 import Button from "../../../../components/Button";
 import Footer from "../../../../components/Footer";
 
@@ -8,47 +9,67 @@ const StatisticsContent = () => {
   const [statistics, setStatistics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [totalFromBackend, setTotalFromBackend] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-  const fetchStatistics = async () => {
+  
+
+  // Función para normalizar diferentes shapes que el backend pueda devolver
+  const normalizeItem = (item) => {
+    if (!item || typeof item !== 'object') return { categoria: 'Sin categoría', cantidad: 0, porcentaje: 0 };
+
+    const categoria = item?.nombreCategoria ?? item?.categoria ?? item?.nombre ?? item?.name ?? 'Sin categoría';
+    const cantidad = Number(item?.totalDenuncias ?? item?.total ?? item?.cantidad ?? item?.count ?? 0);
+    const porcentajeRaw = item?.porcentaje ?? item?.percentage ?? item?.percent ?? item?.porcentajeDenuncias ?? 0;
+    const porcentaje = Number(Number(porcentajeRaw ?? 0).toFixed(1));
+
+    return { categoria, cantidad, porcentaje };
+  };
+
+  // fetchStatistics definido en el scope del componente para reintentos
+  const fetchStatistics = useCallback(async () => {
     try {
       setLoading(true);
-      setError("");
-      
-      // ✅ USAR DATOS REALES DEL BACKEND
+      setError('');
+
       const data = await CategoryStatisticsService.getCategoryStatistics();
-      console.log('📈 Datos recibidos del backend:', data);
-      
-      // Mapear los datos del DTO EstadisticaCategoriaDTO al formato del frontend
-      // USANDO LOS NOMBRES CORRECTOS DE CAMPOS
-      const formattedData = Array.isArray(data)
-        ? data.map(item => ({
-            categoria: item?.nombreCategoria ?? "Sin categoría",
-            cantidad: Number(item?.totalDenuncias ?? 0),
-            porcentaje: Number(Number(item?.porcentaje ?? 0).toFixed(1))
-          }))
-        : [];
-      
-      console.log('🔄 Datos formateados:', formattedData);
+      console.debug('📈 Datos recibidos del backend (raw):', data);
+
+      // Si el backend devuelve un objeto con campo 'data' o 'result', soportarlo
+      const payload = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : (Array.isArray(data?.result) ? data.result : []));
+
+      const formattedData = Array.isArray(payload) ? payload.map(normalizeItem) : [];
+      console.debug('🔄 Datos normalizados:', formattedData);
       setStatistics(formattedData);
-      
+
+      // Intentar obtener un total oficial de denuncias desde el backend
+      try {
+        const all = await ComplaintService.getAllComplaints();
+        const total = Array.isArray(all) ? all.length : (Array.isArray(all?.data) ? all.data.length : 0);
+        console.debug('📥 Total de denuncias obtenido del backend:', total);
+        setTotalFromBackend(total);
+      } catch (errTotal) {
+        console.debug('ℹ️ No se pudo obtener total desde ComplaintService (se usará suma por categoría):', errTotal);
+      }
+
+      // si no vienen datos, mantener mensaje claro
+      if (!formattedData.length) {
+        setError('No hay estadísticas disponibles en este momento.');
+      }
+
     } catch (err) {
-      console.error("❌ Error fetching statistics:", err);
-      setError("Error al cargar las estadísticas desde el servidor");
-      
-      // Datos de fallback temporal
-      const datosFallback = [
-        { categoria: "Cargando...", cantidad: 0, porcentaje: 0 }
-      ];
-      setStatistics(datosFallback);
+      console.error('❌ Error fetching statistics:', err);
+      setError('Error al cargar las estadísticas desde el servidor');
+      setStatistics([{ categoria: 'Cargando...', cantidad: 0, porcentaje: 0 }]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  fetchStatistics();
-}, []);
+  // Ejecutar la primera carga
+  useEffect(() => {
+    fetchStatistics();
+  }, [fetchStatistics]);
 
   const totalDenuncias = statistics.reduce((sum, stat) => sum + stat.cantidad, 0);
 
@@ -72,7 +93,7 @@ const StatisticsContent = () => {
           <Button
             text="Reintentar"
             className="bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => window.location.reload()}
+            onClick={() => fetchStatistics()}
           />
         </div>
       </div>
@@ -91,9 +112,9 @@ const StatisticsContent = () => {
 
         <div style={styles.summaryCard}>
           <div style={styles.summaryItem}>
-            <span style={styles.summaryLabel}>Total de Denuncias</span>
-            <span style={styles.summaryValue}>{totalDenuncias}</span>
-          </div>
+              <span style={styles.summaryLabel}>Total de Denuncias</span>
+              <span style={styles.summaryValue}>{totalFromBackend ?? totalDenuncias}</span>
+            </div>
           <div style={styles.summaryItem}>
             <span style={styles.summaryLabel}>Categorías</span>
             <span style={styles.summaryValue}>{statistics.length}</span>
@@ -193,7 +214,7 @@ const StatisticsContent = () => {
           <Button
             text="Actualizar Datos"
             className="bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => window.location.reload()}
+            onClick={() => fetchStatistics()}
           />
         </div>
       </div>

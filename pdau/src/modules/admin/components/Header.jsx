@@ -84,6 +84,7 @@ const Header = () => {
       '/complaint_checkout': 'Revisión de Denuncia',
       '/response_registration': 'Registrar Respuesta a Denuncia',
       '/archived_complaints': 'Denuncias Archivadas',
+      '/archived_checkout': 'Revisión de Denuncia Archivada',
       '/stats': 'Indicadores de Gestión de Denuncias Anonimas',
       '/reports': 'Reportes',
       '/admin_change_password': 'Cambiar contraseña'

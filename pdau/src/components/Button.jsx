@@ -1,22 +1,27 @@
 import React from 'react';
 
-const Button = ({ text, onClick }) => {
+const Button = ({ text, onClick, className, style: styleOverride, disabled }) => {
 
   const handleMouseEnter = (e) => {
-    Object.assign(e.target.style, styles.buttonHover);
+    // use currentTarget to avoid nested element issues
+    Object.assign(e.currentTarget.style, styles.buttonHover);
   };
 
   const handleMouseLeave = (e) => {
-    e.target.style.transform = 'scale(1)';
-    e.target.style.opacity = '1';
+    e.currentTarget.style.transform = 'scale(1)';
+    e.currentTarget.style.opacity = '1';
   };
+
+  const combinedStyle = { ...styles.button, ...styleOverride };
 
   return (
     <button
-      onClick={onClick} 
-      style={styles.button}
+      onClick={onClick}
+      className={className}
+      style={combinedStyle}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      disabled={disabled}
     >
       {text}
     </button>
@@ -25,7 +30,9 @@ const Button = ({ text, onClick }) => {
 
 const styles = {
   button: {
-    minWidth: '220px',
+    // Make buttons fill the width of their container so stacked buttons
+    // (like los botones del sidebar) tengan el mismo tamaño visual.
+    width: '100%',
     padding: '0.75rem 1.5rem',
     textAlign: 'center',
     fontWeight: 'bold',

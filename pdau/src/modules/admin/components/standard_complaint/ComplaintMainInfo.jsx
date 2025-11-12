@@ -4,11 +4,6 @@ import { useNavigate } from "react-router-dom";
 
 const ComplaintMainInfo = ({
   complaint,
-  departamentos,
-  selectedDepartamento,
-  assigningDept,
-  onDepartamentoChange,
-  onRemitir,
 }) => {
   const navigate = useNavigate();
 
@@ -42,7 +37,7 @@ const ComplaintMainInfo = ({
           <span style={styles.label}>Título</span>
           <input
             type="text"
-            value={complaint.titulo}
+            value={complaint.titulo ?? ""}
             readOnly
             style={styles.input}
           />
@@ -51,47 +46,12 @@ const ComplaintMainInfo = ({
         <div style={styles.fieldRow}>
           <span style={styles.label}>Descripción</span>
           <textarea
-            value={complaint.descripcion}
+            value={complaint.descripcion ?? ""}
             readOnly
             style={styles.textarea}
           />
         </div>
-        {/* Departamento actual */}
-        {complaint.departamento && (
-          <div style={styles.fieldRow}>
-            <span style={styles.label}>Departamento actual</span>
-            <input
-              type="text"
-              value={complaint.departamento.nombre}
-              readOnly
-              style={styles.disabledInput}
-            />
-          </div>
-        )}
-        {/* Remitir a departamento */}
-        <form onSubmit={onRemitir} style={styles.fieldRow}>
-          <span style={styles.label}>Remitir a departamento</span>
-          <select
-            style={styles.select}
-            value={selectedDepartamento}
-            onChange={(e) => onDepartamentoChange(e.target.value)}
-            required
-            disabled={assigningDept}
-          >
-            <option value="">Selecciona un departamento...</option>
-            {departamentos.map((dep) => (
-              <option key={dep.id} value={dep.id}>
-                {dep.nombre}
-              </option>
-            ))}
-          </select>
-          <Button
-            type="submit"
-            text={assigningDept ? "Remitiendo..." : "Remitir"}
-            className="bg-red-600 hover:bg-red-700 text-white"
-            disabled={assigningDept}
-          />
-        </form>
+
         
       </div>
     </div>

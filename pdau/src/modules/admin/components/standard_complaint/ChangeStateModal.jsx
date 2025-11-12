@@ -37,11 +37,22 @@ const ChangeStateModal = ({
               disabled={submitting}
             >
               <option value="">Selecciona un estado...</option>
-              {nextStates.map((estado) => (
-                <option key={estado.id} value={estado.id}>
-                  {estado.nombre}
-                </option>
-              ))}
+              {(() => {
+                // Solo permitir estos tres estados (si existen en nextStates): Inicial, Resuelta, Cerrada
+                const allowed = ["inicial", "resuelta", "cerrada"];
+                const filtered = Array.isArray(nextStates)
+                  ? nextStates.filter((s) => allowed.includes((s.nombre || "").toString().toLowerCase()))
+                  : [];
+
+                // Si no hay estados filtrados, mostrar los nextStates por compatibilidad
+                const toRender = filtered.length > 0 ? filtered : (nextStates || []);
+
+                return toRender.map((estado) => (
+                  <option key={estado.id} value={estado.id}>
+                    {estado.nombre}
+                  </option>
+                ));
+              })()}
             </select>
           </div>
           <div style={styles.field}>

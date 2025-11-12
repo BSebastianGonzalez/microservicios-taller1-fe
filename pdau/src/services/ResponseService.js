@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // URL específica para el microservicio de respuestas
-const RESPUESTAS_API_URL = import.meta.env.VITE_RESPUESTAS_API_URL || 'https://pdau-complaintmanagement-production.up.railway.app';
+const RESPUESTAS_API_URL = import.meta.env.VITE_RESPUESTAS_API_URL;
 
 const ResponseService = {
   async registrarRespuesta(responseData) {

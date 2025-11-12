@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiLockPasswordFill } from 'react-icons/ri';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
-import { FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiAlertCircle, FiCheckCircle, FiArrowLeft } from 'react-icons/fi';
 import AdminService from '../../../services/AdminService';
 import Modal from '../../../components/Modal';
 
@@ -75,12 +75,46 @@ const ChangePassword = () => {
     navigate('/data');
   };
 
+  const handleBack = () => {
+    if ((password || confirmPassword) && !isLoading) {
+      if (window.confirm('Tienes cambios sin guardar. ¿Deseas salir sin guardar?')) {
+        navigate('/data');
+      }
+    } else {
+      navigate('/data');
+    }
+  };
+
   return (
     <div style={styles.container}>
+      <div
+                style={styles.backButton}
+                onClick={handleBack}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#ffffff';
+                  e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.06)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'white';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.05)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+                role="button"
+                aria-label="Volver al perfil"
+              >
+                <FiArrowLeft size={20} />
+                <span>Volver al perfil</span>
+              </div>
+      
       <div style={styles.card}>
         <div style={styles.header}>
-
-          <p style={styles.subtitle}>Elige una nueva contraseña segura para tu cuenta.</p>
+          <div style={styles.headerContent}>
+            <div style={styles.headerText}>
+                <p style={styles.welcomeSubtitle}>Elige una nueva contraseña segura para tu cuenta.</p>
+              </div>
+            
+          </div>
         </div>
 
         <div style={styles.form}>
@@ -170,24 +204,73 @@ const ChangePassword = () => {
 
 const styles = {
   container: {
+    position: 'relative',
     display: 'flex',
     justifyContent: 'center',
     width: '100%',
-    padding: '2rem',
+    height: '100%',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '1rem 2rem',
   },
   card: {
     width: '100%',
     maxWidth: 500,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '2rem',
+    padding: '1.5rem',
     backgroundColor: 'white',
     borderRadius: 16,
+    marginTop: '-25.5rem',
     border: '1px solid #e2e8f0',
     boxShadow: '0 20px 40px rgba(0,0,0,0.06)',
   },
   header: {
     marginBottom: '1rem',
+  },
+  headerContent: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: '1rem',
+  },
+
+  navigationSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+  },
+
+  backButton: {
+    position: 'absolute',
+    top: '0.8rem',
+    left: '1rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '0.6rem 1rem',
+    background: 'white',
+    borderRadius: 10,
+    border: '1px solid #e2e8f0',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontWeight: 600,
+    color: '#2563eb',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+    zIndex: 10,
+  },
+
+  headerText: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+
+  welcomeSubtitle: {
+    fontSize: '1rem',
+    color: '#000000',
+    margin: 0,
+    fontWeight: 600,
   },
   title: {
     fontSize: '1.5rem',

@@ -2,17 +2,16 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiFilter, FiFileText } from "react-icons/fi";
 import ComplaintService from "../../../../services/ComplaintService";
+import ResponseService from "../../../../services/ResponseService";
 import ListContainer from "../../../../components/ListContainer";
 
 const ComplaintsList = () => {
   const [complaints, setComplaints] = useState([]);
   const [filteredComplaints, setFilteredComplaints] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [departamentos, setDepartamentos] = useState([]);
   const [estados, setEstados] = useState([]);
 
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
-  const [selectedDepartamentoId, setSelectedDepartamentoId] = useState("");
   const [selectedEstadoId, setSelectedEstadoId] = useState("");
   const [keyword, setKeyword] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
@@ -36,7 +35,7 @@ const ComplaintsList = () => {
 
         // Obtener datos reales del backend
         const [complaintsData, categoriesData, estadosData] = await Promise.all([
-          ComplaintService.getAllComplaints(),
+          ComplaintService.getUnarchivedComplaints(),
           ComplaintService.getAllCategories(),
           ComplaintService.getEstados()
         ]);
@@ -49,14 +48,10 @@ const ComplaintsList = () => {
 
         // Procesar denuncias para asegurar estructura consistente
         const processedComplaints = Array.isArray(complaintsData) ? complaintsData : [];
-        
-        // Tu backend no tiene departamentos, así que usamos array vacío
-        const processedDepartamentos = [];
 
         setComplaints(processedComplaints);
         setFilteredComplaints(processedComplaints);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
-        setDepartamentos(processedDepartamentos);
         setEstados(Array.isArray(estadosData) ? estadosData : []);
 
       } catch (err) {
@@ -80,7 +75,6 @@ const ComplaintsList = () => {
         setComplaints(complaintsData);
         setFilteredComplaints(complaintsData);
         setCategories([]);
-        setDepartamentos([]);
         setEstados([]);
       } finally {
         setLoading(false);
@@ -166,6 +160,87 @@ const ComplaintsList = () => {
   );
 
   const handlePageChange = (page) => setCurrentPage(page);
+
+  // Enriquecer únicamente las denuncias visibles en la página actual con la fecha de respuesta
+  // Mover la lógica de enriquecimiento a un efecto separado que solo se ejecute una vez
+useEffect(() => {
+  let mounted = true;
+  
+  const fetchResponseDatesForPage = async () => {
+    if (!currentComplaints || currentComplaints.length === 0) return;
+
+    try {
+      const enriched = await Promise.all(
+        currentComplaints.map(async (complaint) => {
+          // Si ya tenemos fechaRespuesta, omitimos la petición
+          if (complaint.fechaRespuesta !== undefined) return complaint;
+          
+          try {
+            const response = await ResponseService.obtenerRespuesta(complaint.id);
+            
+            // response ahora siempre será un objeto, nunca null
+            if (response && response.fechaRespuesta) {
+              console.log(`Respuesta encontrada para denuncia ${complaint.id}:`, response.fechaRespuesta);
+              return { 
+                ...complaint, 
+                fechaRespuesta: response.fechaRespuesta 
+              };
+            } else {
+              console.log(`No hay respuesta para denuncia ${complaint.id}`);
+              return { 
+                ...complaint, 
+                fechaRespuesta: null 
+              };
+            }
+          } catch (error) {
+            console.warn(`Error obteniendo respuesta para denuncia ${complaint.id}:`, error);
+            return { 
+              ...complaint, 
+              fechaRespuesta: null 
+            };
+          }
+        })
+      );
+
+      if (!mounted) return;
+
+      // Actualizar solo si hay cambios
+      setFilteredComplaints(prev => {
+        const newFiltered = [...prev];
+        let hasChanges = false;
+        
+        for (let i = 0; i < enriched.length; i++) {
+          const originalIndex = indexOfFirstItem + i;
+          const originalComplaint = prev[originalIndex];
+          const enrichedComplaint = enriched[i];
+          
+          if (originalComplaint && 
+              originalComplaint.fechaRespuesta !== enrichedComplaint.fechaRespuesta) {
+            newFiltered[originalIndex] = enrichedComplaint;
+            hasChanges = true;
+          }
+        }
+        
+        return hasChanges ? newFiltered : prev;
+      });
+    } catch (err) {
+      console.warn("Error general al enriquecer fechas:", err);
+    }
+  };
+
+  // Solo ejecutar si hay denuncias sin fechaRespuesta
+  const hasComplaintsWithoutDate = currentComplaints.some(
+    complaint => complaint.fechaRespuesta === undefined
+  );
+  
+  if (hasComplaintsWithoutDate) {
+    fetchResponseDatesForPage();
+  }
+  
+  return () => {
+    mounted = false;
+  };
+}, [currentPage, currentComplaints, indexOfFirstItem]); // Solo se ejecuta una vez al montar el componente
 
   /* ----------------- Utils ------------------ */
   const formatDate = (dateString) => {
@@ -254,12 +329,14 @@ const ComplaintsList = () => {
           <table style={styles.table}>
             <thead>
               <tr>
-                <th style={{ ...styles.th, width: "60%" }}>Título de denuncia</th>
-                <th style={{ ...styles.th, width: "20%" }}>Fecha de realización</th>
-                <th style={{ ...styles.th, width: "20%", textAlign: "center" }}>
-                  Acciones
-                </th>
-              </tr>
+                  <th style={{ ...styles.th, width: "40%" }}>Título de denuncia</th>
+                  <th style={{ ...styles.th, width: "15%" }}>Fecha de realización</th>
+                  <th style={{ ...styles.th, width: "15%" }}>Fecha de respuesta</th>
+                  <th style={{ ...styles.th, width: "15%" }}>Estado</th>
+                  <th style={{ ...styles.th, width: "15%", textAlign: "center" }}>
+                    Acciones
+                  </th>
+                </tr>
             </thead>
             <tbody>
               {currentComplaints.map((c) => (
@@ -275,25 +352,27 @@ const ComplaintsList = () => {
                     {c.titulo}
                   </td>
                   <td style={styles.td}>{formatDate(c.fechaCreacion)}</td>
-                  <td style={{ ...styles.td, textAlign: "center" }}>
-                    <button
-                      style={styles.linkBtn}
-                      type="button"
-                      onClick={() =>
-                        navigate("/complaint_checkout", {
-                          state: { complaintId: c.id },
-                        })
-                      }
-                    >
-                      <FiFileText size={18} />
-                      <span>Revisar denuncia</span>
-                    </button>
-                  </td>
+                  <td style={styles.td}>{formatDate(c.fechaRespuesta)}</td>
+                  <td style={styles.td}>{c.estado?.nombre || "N/A"}</td>
+                    <td style={{ ...styles.td, textAlign: "center" }}>
+                      <button
+                        style={styles.linkBtn}
+                        type="button"
+                        onClick={() =>
+                          navigate("/complaint_checkout", {
+                            state: { complaintId: c.id },
+                          })
+                        }
+                      >
+                        <FiFileText size={18} />
+                        <span>Revisar denuncia</span>
+                      </button>
+                    </td>
                 </tr>
               ))}
               {currentComplaints.length === 0 && (
                 <tr>
-                  <td colSpan={3} style={styles.emptyCell}>
+                  <td colSpan={5} style={styles.emptyCell}>
                     {complaints.length === 0 
                       ? "No hay denuncias registradas." 
                       : "No hay resultados para los filtros aplicados."

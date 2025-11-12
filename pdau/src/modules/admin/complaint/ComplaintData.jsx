@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ComplaintService from "../../../services/ComplaintService";
 import StateChangeService from "../../../services/StateChangeService";
+import FileComplaintService from "../../../services/FileComplaintService";
+import ArchivingHistory from "../components/archived_complaint/ArchivingHistory";
 import ResponseService from "../../../services/ResponseService";
 import ChangeStateModal from "../components/standard_complaint/ChangeStateModal";
 import StateChangeHistory from "../components/standard_complaint/StateChangeHistory";
@@ -39,16 +41,12 @@ const ComplaintData = () => {
   // Cambios de estado
   const [stateChanges, setStateChanges] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [archivingHistory, setArchivingHistory] = useState([]);
+  const [showArchiveHistory, setShowArchiveHistory] = useState(false);
 
   // Modal de archivo
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [showArchiveSuccess, setShowArchiveSuccess] = useState(false);
-
-  // Departamentos para asignar
-  const [departamentos, setDepartamentos] = useState([]);
-  const [selectedDepartamento, setSelectedDepartamento] = useState("");
-  const [assigningDept, setAssigningDept] = useState(false);
-  const [assignDeptSuccess, setAssignDeptSuccess] = useState(false);
 
   const complaintId =
     location.state?.complaintId ||
@@ -74,27 +72,23 @@ const ComplaintData = () => {
         }
 
         // Obtener datos reales del backend
-        const [complaintData, filesData, departamentosData, estadosData] = await Promise.all([
+        const [complaintData, filesData, estadosData] = await Promise.all([
           ComplaintService.getComplaintById(complaintId),
           ComplaintService.getFilesByComplaintId(complaintId),
-          ComplaintService.getAllDepartamentos(),
           ComplaintService.getEstados ? ComplaintService.getEstados() : []
         ]);
 
         console.log("Datos de denuncia recibidos:", complaintData);
         console.log("Archivos recibidos:", filesData);
-        console.log("Departamentos recibidos:", departamentosData);
         console.log("Estados recibidos:", estadosData);
 
         // Procesar datos para asegurar estructura consistente
         const processedComplaint = complaintData.data || complaintData;
         const processedFiles = Array.isArray(filesData) ? filesData : filesData.data || [];
-        const processedDepartamentos = Array.isArray(departamentosData) ? departamentosData : departamentosData.data || [];
         const processedEstados = Array.isArray(estadosData) ? estadosData : estadosData.data || [];
 
         setComplaint(processedComplaint);
         setFiles(processedFiles);
-        setDepartamentos(processedDepartamentos);
 
         // Obtener cambios de estado si el servicio está disponible
         if (StateChangeService && StateChangeService.getStateChanges) {
@@ -121,6 +115,18 @@ const ComplaintData = () => {
         setError("Error al cargar la denuncia. Por favor, intente nuevamente.");
       } finally {
         setLoading(false);
+      }
+      // Cargar historial de archivamiento (si existe el servicio)
+      try {
+        if (FileComplaintService && FileComplaintService.getArchivingHistory) {
+          const historyData = await FileComplaintService.getArchivingHistory(complaintId);
+          // getArchivingHistory puede devolver array o objeto; normalizar
+          const processedHistory = Array.isArray(historyData) ? historyData : historyData?.data || [];
+          setArchivingHistory(processedHistory);
+        }
+      } catch (err) {
+        console.warn("No se pudo cargar historial de archivamiento:", err);
+        setArchivingHistory([]);
       }
     };
     fetchData();
@@ -228,33 +234,6 @@ const ComplaintData = () => {
     }
   };
 
-  const handleAssignDepartamento = async (e) => {
-    e.preventDefault();
-    if (!selectedDepartamento) return;
-    
-    setAssigningDept(true);
-    try {
-      // Llamada real al backend para asignar departamento
-      await ComplaintService.assignComplaintToDepartment(complaintId, parseInt(selectedDepartamento));
-      
-      // Actualizar el estado local
-      const deptoSeleccionado = departamentos.find(dept => dept.id === Number(selectedDepartamento));
-      setComplaint(prev => ({
-        ...prev,
-        departamento: deptoSeleccionado
-      }));
-      
-      setAssignDeptSuccess(true);
-      setTimeout(() => setAssignDeptSuccess(false), 2000);
-      
-    } catch (error) {
-      console.error("Error al asignar departamento:", error);
-      alert("Error al asignar el departamento.");
-    } finally {
-      setAssigningDept(false);
-    }
-  };
-
   const handleRegisterResponse = () => {
     navigate("/response_registration", {
       state: { complaintId: complaintId }
@@ -285,11 +264,6 @@ const ComplaintData = () => {
         <div style={styles.leftColumn}>
           <ComplaintMainInfo
             complaint={complaint}
-            departamentos={departamentos}
-            selectedDepartamento={selectedDepartamento}
-            assigningDept={assigningDept}
-            onDepartamentoChange={setSelectedDepartamento}
-            onRemitir={handleAssignDepartamento}
           />
 
           {!loadingResponse && (
@@ -361,6 +335,15 @@ const ComplaintData = () => {
             onArchive={() => setShowArchiveModal(true)}
             stateChanges={stateChanges}
           />
+          {archivingHistory.length > 0 && (
+            <div style={{ marginTop: "0.5rem" }}>
+              <Button
+                text={`Historial de archivamiento (${archivingHistory.length})`}
+                className="bg-gray-200 hover:bg-gray-300 text-black"
+                onClick={() => setShowArchiveHistory(true)}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -403,9 +386,11 @@ const ComplaintData = () => {
         show={showArchiveSuccess}
         message="Denuncia archivada con éxito"
       />
-      <SuccessAlert
-        show={assignDeptSuccess}
-        message="¡Departamento asignado correctamente!"
+      <ArchivingHistory
+        show={showArchiveHistory}
+        onClose={() => setShowArchiveHistory(false)}
+        history={archivingHistory}
+        complaint={complaint}
       />
       <SuccessAlert
         show={showResponseSuccess}
