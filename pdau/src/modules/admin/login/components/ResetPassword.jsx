@@ -224,7 +224,7 @@ const styles = {
     padding: '0.85rem 1rem',
     borderRadius: 10,
     border: '2px solid #e5e7eb',
-    background: '#f9fafb'
+    backgroundColor: '#f9fafb'
   },
   buttonWrap: {
     marginTop: "2rem",

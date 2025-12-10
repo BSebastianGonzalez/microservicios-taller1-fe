@@ -89,7 +89,7 @@ const Header = () => {
       '/archived_checkout': 'Revisión de Denuncia Archivada',
       '/stats': 'Indicadores de Gestión de Denuncias Anonimas',
       '/statistics_complaint': 'Estadísticas de denuncias',
-      '/reports': 'Reportes',
+      '/audit_actions': 'Auditoria de Acciones Administrativas',
       '/admin_change_password': 'Cambiar contraseña'
     };
     

@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// URL específica para autenticación
 const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL;
 
 // Crear instancia específica para autenticación
@@ -73,9 +72,44 @@ const AdminService = {
     }
   },
 
+  // Obtiene el rol del admin en sesión (si existe)
+  getAdminRole: () => {
+    const current = AdminService.getCurrentAdmin();
+    if (!current) return null;
+    return (
+      current.rol ||
+      current.role ||
+      current?.admin?.rol ||
+      current?.admin?.role ||
+      current?.user?.rol ||
+      current?.user?.role ||
+      null
+    );
+  },
+
+  // Determina si el admin actual es "especial" o de nivel superior
+  isSpecialAdmin: () => {
+    const current = AdminService.getCurrentAdmin();
+    if (!current) return false;
+
+    const role = (AdminService.getAdminRole() || '').toString().toLowerCase().trim();
+    const flag = Boolean(
+      current?.isSpecialAdmin ||
+      current?.admin?.isSpecialAdmin ||
+      current?.esAdminEspecial ||
+      current?.admin?.esAdminEspecial ||
+      current?.especial ||
+      current?.admin?.especial
+    );
+
+    const roleSuggestsSpecial = ['especial', 'special', 'super'].some((word) => role.includes(word));
+
+    return flag || roleSuggestsSpecial;
+  },
+
   getAllAdmins: async () => {
     try {
-      const response = await authAxios.get("/admins/list");
+      const response = await authAxios.get("/api/admin");
       return response.data;
     } catch (error) {
       console.error("Error al obtener la lista de administradores:", error);
@@ -205,7 +239,7 @@ const AdminService = {
       console.log(`✅ ${documentosExistentes.length} documentos encontrados en servidor`);
       return documentosExistentes.map(doc => ({ tipo: doc.tipo }));
 
-    } catch (e) {
+    } catch {
       console.warn('❌ Error al conectar con servidor, usando solo localStorage');
       return [];
     }
@@ -405,7 +439,7 @@ const AdminService = {
       
       throw new Error(errorMessage);
     }
-  }
+  },
 };
 
 export default AdminService;
