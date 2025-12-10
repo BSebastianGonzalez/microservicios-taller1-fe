@@ -4,6 +4,7 @@ import StatusTag from "../../../../components/StatusTag";
 import Button from "../../../../components/Button";
 import ComplaintService from "../../../../services/ComplaintService";
 import ResponseService from "../../../../services/ResponseService";
+import AppealResponseService from "../../../../services/AppealResponseService";
 import Footer from "../../../../components/Footer";
 import { FiFileText, FiClock, FiAlertTriangle, FiXCircle, FiEdit, FiDownload, FiExternalLink } from 'react-icons/fi';
 import { FaBalanceScale } from 'react-icons/fa';
@@ -81,6 +82,9 @@ const ComplaintResponse = () => {
   const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingResponse, setLoadingResponse] = useState(true);
+  const [appealResponse, setAppealResponse] = useState(null);
+  const [loadingAppeal, setLoadingAppeal] = useState(true);
+  const [errorAppeal, setErrorAppeal] = useState(null);
   const [error, setError] = useState(null);
   const [temporaryUrls, setTemporaryUrls] = useState(new Set()); // Para limpiar URLs temporales
 
@@ -147,6 +151,12 @@ const ComplaintResponse = () => {
         
         if (complaintData.id) {
           await fetchResponse(complaintData.id);
+          // Después de obtener la respuesta, intentar obtener la respuesta de apelación
+          try {
+            await fetchAppealResponse(complaintData.id);
+          } catch (e) {
+            console.warn('Error obteniendo respuesta de apelación:', e);
+          }
         } else {
           setLoadingResponse(false);
         }
@@ -182,9 +192,9 @@ const ComplaintResponse = () => {
                             responseData.contenido || 
                             "No se proporcionó un detalle específico.",
             documentosSoporte: documentosProcesados,
-            diasApelacion: responseData.diasApelacion || 5,
+            diasApelacion: responseData.diasApelacion ?? 10,
             fechaLimiteApelacion: responseData.fechaLimiteApelacion || 
-                                calcularFechaLimite(responseData.fechaRespuesta, responseData.diasApelacion || 5)
+                                calcularFechaLimite(responseData.fechaRespuesta, responseData.diasApelacion ?? 10)
           };
           
           setResponse(processedResponse);
@@ -203,6 +213,40 @@ const ComplaintResponse = () => {
         }
         
         setLoadingResponse(false);
+      }
+    };
+
+    // Obtener respuesta de apelación asociada a la denuncia
+    const fetchAppealResponse = async (complaintId) => {
+      try {
+        setLoadingAppeal(true);
+        setErrorAppeal(null);
+
+        const appealData = await AppealResponseService.obtenerPorDenuncia(complaintId);
+
+        if (!appealData) {
+          setAppealResponse(null);
+          setLoadingAppeal(false);
+          return;
+        }
+
+        // Reusar procesarDocumentos para convertir binarios a URLs
+        const documentosProcesados = await procesarDocumentos(appealData);
+
+        const processedAppeal = {
+          id: appealData.id,
+          fechaRespuesta: appealData.fechaRespuesta || appealData.fechaApelacionFecha || null,
+          administrador: appealData.administrador?.nombre || appealData.administradorResponsable || 'Administrador del sistema',
+          detalleRespuesta: appealData.detalle || appealData.descripcion || appealData.contenido || 'No se proporcionó un detalle específico.',
+          documentosSoporte: documentosProcesados
+        };
+
+        setAppealResponse(processedAppeal);
+        setLoadingAppeal(false);
+      } catch (error) {
+        console.error('Error al cargar respuesta de apelación:', error);
+        setErrorAppeal(error.message || 'Error al cargar la respuesta de apelación');
+        setLoadingAppeal(false);
       }
     };
 
@@ -484,6 +528,10 @@ const ComplaintResponse = () => {
   const estadoActualNombre = complaint.estado?.nombre || complaint.estadoNombre || "Desconocido";
   const diasRestantes = response ? calcularDiasRestantes(response.fechaLimiteApelacion) : 0;
   const puedeApelar = response && diasRestantes > 0;
+  // Permite forzar habilitación para pruebas mediante query param ?forceAppeal=true
+  const urlParams = new URLSearchParams(window.location.search);
+  const forceAppeal = urlParams.get('forceAppeal') === 'true';
+  const puedeApelarFinal = !!response && (diasRestantes > 0 || forceAppeal);
 
   return (
     <div style={styles.pageContainer}>
@@ -595,6 +643,105 @@ const ComplaintResponse = () => {
                 </div>
               )}
 
+              {/* Respuesta de Apelación (si existe) */}
+              {loadingAppeal && (
+                <div style={{ ...styles.noResponse, marginTop: '1rem' }}>
+                  <FiClock style={styles.noResponseIcon} />
+                  <p style={styles.noResponseText}>Cargando respuesta de apelación...</p>
+                </div>
+              )}
+
+              {errorAppeal && (
+                <div style={{ ...styles.errorContainer, marginTop: '1rem' }}>
+                  <div style={styles.errorText}>{errorAppeal}</div>
+                </div>
+              )}
+
+              {!loadingAppeal && appealResponse && (
+                <div style={{ ...styles.responseSection, marginTop: '1.25rem' }}>
+                  <h3 style={styles.responseTitle}>Respuesta de Apelación</h3>
+
+                  <div style={styles.responseInfo}>
+                    <div style={styles.infoItem}>
+                      <span style={styles.infoLabel}>Fecha de respuesta:</span>
+                      <span style={styles.infoValue}>{formatearFecha(appealResponse.fechaRespuesta)}</span>
+                    </div>
+                    <div style={styles.infoItem}>
+                      <span style={styles.infoLabel}>Administrador responsable:</span>
+                      <span style={styles.infoValue}>{appealResponse.administrador}</span>
+                    </div>
+                  </div>
+
+                  <div style={styles.detailSection}>
+                    <h4 style={styles.detailTitle}>Detalle de la Respuesta de Apelación</h4>
+                    <div style={styles.responseDetail}>
+                      {appealResponse.detalleRespuesta}
+                    </div>
+                  </div>
+
+                  {appealResponse.documentosSoporte && appealResponse.documentosSoporte.length > 0 ? (
+                    <div style={styles.documentsSection}>
+                      <h4 style={styles.documentsTitle}>Documentos de Apelación ({appealResponse.documentosSoporte.length})</h4>
+                      <div style={styles.documentsList}>
+                        {appealResponse.documentosSoporte.map((doc, index) => {
+                          const isAvailable = doc.url && !doc.error;
+                          const esPdf = doc.nombre?.toLowerCase().endsWith('.pdf') || doc.tipoContenido === 'application/pdf';
+
+                          return (
+                            <div
+                              key={doc.id || index}
+                              style={{
+                                ...styles.documentCard,
+                                cursor: isAvailable ? 'pointer' : 'default',
+                                opacity: isAvailable ? 1 : 0.7,
+                                borderLeft: `4px solid ${esPdf ? '#dc2626' : '#3b82f6'}`
+                              }}
+                              onClick={() => isAvailable && handleDocumentClick(doc)}
+                              onKeyPress={(e) => isAvailable && (e.key === 'Enter' || e.key === ' ') && handleDocumentClick(doc)}
+                              tabIndex={isAvailable ? 0 : -1}
+                            >
+                              {getFileIcon(doc.nombre)}
+                              <div style={styles.documentInfo}>
+                                <span style={styles.documentName}>
+                                  {doc.nombre || `Documento ${index + 1}`}
+                                  {doc.esTemporal && (
+                                    <span style={{ 
+                                      fontSize: '0.7rem', 
+                                      color: '#f59e0b', 
+                                      marginLeft: '0.5rem',
+                                      fontWeight: 'normal'
+                                    }}>
+                                      (convertido)
+                                    </span>
+                                  )}
+                                </span>
+                                {doc.tamaño && (
+                                  <span style={styles.documentSize}>{doc.tamaño}</span>
+                                )}
+                              </div>
+                              <div style={styles.documentActions}>
+                                {isAvailable ? (
+                                  <FiExternalLink style={styles.actionIcon} title="Abrir en nueva pestaña" />
+                                ) : (
+                                  <span style={styles.unavailableText}>
+                                    {doc.error ? 'Error al cargar' : 'No disponible'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={styles.noDocuments}>
+                      <span style={{ color: '#6b7280' }}>No hay archivos adjuntos para la respuesta de apelación.</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+
               {/* Información de Apelación */}
               <div style={styles.appealSection}>
                 <div style={styles.appealHeader}>
@@ -663,12 +810,25 @@ const ComplaintResponse = () => {
             </div>
           )}
 
-          <Button
-            text="Volver al inicio"
-            className="bg-red-600 hover:bg-red-700 text-white w-full py-3 text-lg rounded-lg mt-2"
-            onClick={() => navigate("/")}
-            style={styles.button}
-          />
+          <div style={{ display: 'flex', gap: 12, width: '100%', marginTop: '1rem', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', width: '100%', maxWidth: '760px' }}>
+              <Button
+                text="Apelar"
+                className="bg-red-600 hover:bg-red-700 text-white py-3 text-lg rounded-lg"
+                onClick={() => navigate("/appeal_register", { state: { complaint, response } })}
+                disabled={!puedeApelarFinal}
+                style={{ ...styles.button, flex: '0 0 auto', minWidth: '220px', maxWidth: '320px' }}
+                title={!puedeApelarFinal ? 'Plazo para apelar expirado' : 'Presentar apelación'}
+              />
+
+              <Button
+                text="Volver al inicio"
+                className="bg-red-600 hover:bg-red-700 text-white py-3 text-lg rounded-lg"
+                onClick={() => navigate("/")}
+                style={{ ...styles.button, flex: '0 0 auto', minWidth: '220px', maxWidth: '320px' }}
+              />
+            </div>
+          </div>
         </div>
       </div>
       <Footer />
@@ -676,7 +836,6 @@ const ComplaintResponse = () => {
   );
 };
 
-// Los estilos se mantienen igual...
 const styles = {
   pageContainer: {
     display: "flex",
