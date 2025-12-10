@@ -113,18 +113,7 @@ const MainPage = () => {
               </p>
             </div>
 
-            <div style={responsiveStyles.card}>
-              <Link to="/statistics_public" style={{ width: "100%", display: "flex", justifyContent: "center" }}>
-                <HomeButton
-                text="Ver Estadísticas"
-                imageSrc="img/statistics.png"
-                onClick={() => console.log("Ver Estadísticas")}
-              />
-              </Link>
-              <p style={styles.cardText}>
-                Explora estadísticas sobre denuncias recibidas, categorías más comunes y tiempos de resolución.
-              </p>
-            </div>
+            
           </div>
         </div>
       </UserLayout>
