@@ -1,5 +1,7 @@
 import React from 'react';
 import './App.css'
+import ProtectedRoute from './services/ProtectedRoute';
+import AdminService from './services/AdminService';
 import MainPage from './pages/user/MainPage';
 import ComplaintInfo from './pages/complaint/ComplaintInfo';
 import ComplaintRegister from './pages/complaint/ComplaintRegister';
@@ -28,9 +30,12 @@ import AppealRegister from './pages/user/AppealRegister';
 import AppealResponse from './pages/complaint/AppealResponse';
 import AppealRegistrationPage from './pages/admin/AppealRegistration';
 import StatisticsComplaint from './pages/admin/StatisticsComplaint';
+import AuditActionsPage from './pages/admin/AuditActionsPage';
 import { Route, Routes, BrowserRouter } from 'react-router-dom'
 
 function App() {
+  const isAuthenticated = AdminService.isAuthenticated();
+
   return (
     <BrowserRouter>
       <Routes>
@@ -66,6 +71,14 @@ function App() {
         <Route path="/stats" element={<ManagementIndicatorsPage />} />
         <Route path="/statistics_complaint" element={<StatisticsComplaint />} />
 
+        <Route
+          path="/audit_actions"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated} requireSpecial>
+              <AuditActionsPage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route path="/archived_complaints" element={<ViewArchivedComplaints />} />
         <Route path="/archived_checkout" element={<ArchivedComplaintCheckout />} />

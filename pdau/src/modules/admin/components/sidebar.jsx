@@ -12,6 +12,7 @@ import {
   FiChevronDown,
   FiChevronRight,
 } from "react-icons/fi";
+import AdminService from "../../../services/AdminService";
 
 const Sidebar = ({ adminData }) => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const Sidebar = ({ adminData }) => {
   const [selectedSection, setSelectedSection] = useState("Inicio");
   const [openDropdown, setOpenDropdown] = useState(null); // "datos" | "denuncias" | "reportes" | null
   const [hoverId, setHoverId] = useState(null);
+  const [isSpecialAdmin, setIsSpecialAdmin] = useState(false);
 
   // Refs para cerrar al click fuera
   const datosRef = useRef(null);
@@ -47,10 +49,16 @@ const Sidebar = ({ adminData }) => {
     else if (p.startsWith("/stats")) 
       setSelectedSection("Generar indicadores de gestión");
     else if (p.startsWith("/statistics_complaint")) setSelectedSection("Generar estadísticas");
-    else if (p.startsWith("/reports/new"))
-      setSelectedSection("Generar reportes");
-    else if (p.startsWith("/reports")) setSelectedSection("Consultar reportes");
+    else if (p.startsWith("/audit_actions"))
+      setSelectedSection("Auditoría");
   }, [location.pathname]);
+
+  useEffect(() => {
+    setIsSpecialAdmin(AdminService.isSpecialAdmin());
+    if (!AdminService.isSpecialAdmin() && openDropdown === "reportes") {
+      setOpenDropdown(null);
+    }
+  }, [openDropdown]);
 
   // Cerrar dropdowns al click fuera
   useEffect(() => {
@@ -306,72 +314,23 @@ const Sidebar = ({ adminData }) => {
           </div>
         </div>
 
-        {/* Reportes */}
-        <div style={styles.menuGroup} ref={reportesRef}>
-          <div
-            style={getMenuItemStyle(
-              "reportes",
-              openDropdown === "reportes" ||
-                selectedSection === "Generar reportes" ||
-                selectedSection === "Consultar reportes"
-            )}
-            onMouseEnter={() => setHoverId("reportes")}
-            onMouseLeave={() => setHoverId(null)}
-            onClick={() =>
-              setOpenDropdown(openDropdown === "reportes" ? null : "reportes")
-            }
-          >
-            <FiPieChart style={styles.icon} />
-            <span style={styles.menuText}>Reportes</span>
-            <FiChevronDown
-              style={{
-                ...styles.dropdownArrow,
-                transform:
-                  openDropdown === "reportes"
-                    ? "rotate(180deg)"
-                    : "rotate(0deg)",
-              }}
-            />
-          </div>
-
-          <div
-            style={{
-              ...styles.dropdownPanel,
-              ...(openDropdown === "reportes" ? styles.dropdownPanelOpen : {}),
-            }}
-          >
-            {/* Deshabilitado (como en tu mockup) */}
+        {/* Auditoría - solo visible para administradores especiales (enlace directo) */}
+        {isSpecialAdmin && (
+          <div style={styles.menuGroup}>
             <div
-              style={getDropdownItemStyle(
-                "gen-report",
-                selectedSection === "Generar reportes",
-                true
+              style={getMenuItemStyle(
+                "auditoria",
+                selectedSection === "Auditoría"
               )}
-              onMouseEnter={() => setHoverId("gen-report")}
+              onMouseEnter={() => setHoverId("auditoria")}
               onMouseLeave={() => setHoverId(null)}
-              onClick={(e) => e.stopPropagation()}
-              aria-disabled="true"
-              title="Disponible próximamente"
+              onClick={() => go("/audit_actions", "Auditoría")}
             >
-              <FiChevronRight style={styles.chevIconMuted} />
-              <span style={styles.dropdownTextMuted}>Generar reportes</span>
-            </div>
-
-            <div
-              style={getDropdownItemStyle(
-                "ver-report",
-                selectedSection === "Consultar reportes",
-                false
-              )}
-              onMouseEnter={() => setHoverId("ver-report")}
-              onMouseLeave={() => setHoverId(null)}
-              onClick={() => go("/reports", "Consultar reportes")}
-            >
-              <FiChevronRight style={styles.chevIcon} />
-              <span style={styles.dropdownText}>Consultar reportes</span>
+              <FiPieChart style={styles.icon} />
+              <span style={styles.menuText}>Auditoría</span>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Footer: Cerrar sesión */}
