@@ -1,89 +1,85 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import ComplaintService from "../../../services/ComplaintService";
-import ResponseService from "../../../services/ResponseService";
-import Button from "../../../components/Button";
-import Modal from "../../../components/Modal";
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import AppealService from '../../../services/AppealService';
+import AppealResponseService from '../../../services/AppealResponseService';
+import Button from '../../../components/Button';
+import Modal from '../../../components/Modal';
 import { FiFileText, FiExternalLink, FiX } from 'react-icons/fi';
 import { openDocumentInNewTab, openDocumentFromUrl } from '../../../utils/documentViewer';
 
-const ResponseRegistration = () => {
+const AppealRegistration = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const complaintId = location.state?.complaintId;
 
-  const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  const [modal, setModal] = useState({
-    open: false,
-    type: "success",
-    title: "",
-    message: "",
-    onConfirm: null,
-    confirmText: "Aceptar",
-    cancelText: null,
-    onCancel: null,
+  const [appeal, setAppeal] = useState(null);
+  const [form, setForm] = useState({ 
+    detalle: '', 
+    resultado: 'ACEPTADA', 
+    documentosSoporte: [] 
   });
 
-  const [responseData, setResponseData] = useState({
-    detalleRespuesta: "",
-    documentosSoporte: []
+  const [modal, setModal] = useState({ 
+    open: false, 
+    type: 'info', 
+    title: '', 
+    message: '', 
+    onConfirm: null,
+    confirmText: 'Aceptar',
+    cancelText: null,
+    onCancel: null
   });
 
   const adminId = (() => {
-    try {
-      const admin = JSON.parse(localStorage.getItem("admin"));
-      return admin?.id || null;
-    } catch {
-      return null;
+    try { 
+      const admin = JSON.parse(localStorage.getItem('admin')); 
+      return admin?.id || null; 
+    } catch { 
+      return null; 
     }
   })();
 
   useEffect(() => {
-    const fetchComplaint = async () => {
+    const fetch = async () => {
       if (!complaintId) {
-        setModal({
-          open: true,
-          type: "error",
-          title: "Denuncia no encontrada",
-          message: "No se encontró el ID de la denuncia. Regrese a la lista de denuncias.",
-          onConfirm: () => navigate("/read_complaint"),
-          confirmText: "Ir a denuncias",
+        setModal({ 
+          open: true, 
+          type: 'error', 
+          title: 'Denuncia no encontrada', 
+          message: 'No se encontró el ID de la denuncia.', 
+          onConfirm: () => navigate('/read_complaint'),
+          confirmText: 'Ir a denuncias'
         });
+        setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
-        console.log("🔍 Obteniendo datos reales de la denuncia ID:", complaintId);
-        
-        const data = await ComplaintService.getComplaintById(complaintId);
-        console.log("✅ Datos reales de denuncia recibidos:", data);
-        
-        setComplaint(data);
-      } catch (error) {
-        console.error("❌ Error al cargar denuncia:", error);
-        setModal({
-          open: true,
-          type: "error",
-          title: "Error al cargar denuncia",
-          message: "No se pudo cargar la información de la denuncia. Por favor, intente nuevamente.",
-          onConfirm: () => navigate("/read_complaint"),
-          confirmText: "Volver a denuncias",
+        const a = await AppealService.obtenerPorDenuncia(complaintId);
+        const normalized = Array.isArray(a) ? (a[0] || null) : (a || null);
+        setAppeal(normalized);
+      } catch (err) {
+        console.error('Error cargando apelación:', err);
+        setModal({ 
+          open: true, 
+          type: 'error', 
+          title: 'Error', 
+          message: 'No se pudo cargar la apelación.',
+          confirmText: 'Cerrar'
         });
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchComplaint();
+    fetch();
   }, [complaintId, navigate]);
 
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
-    const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+    const MAX_FILE_SIZE = 2 * 1024 * 1024;
     
     const validFiles = files.filter(file => {
       if (file.size > MAX_FILE_SIZE) {
@@ -108,60 +104,48 @@ const ResponseRegistration = () => {
       tamaño: `(${(file.size / 1024).toFixed(0)} KB)`
     }));
     
-    setResponseData(prev => ({
+    setForm(prev => ({
       ...prev,
       documentosSoporte: [...prev.documentosSoporte, ...newFiles]
     }));
     
-    // Limpiar el input file para permitir seleccionar el mismo archivo otra vez
     e.target.value = '';
   };
 
   const removeFile = (e, fileId) => {
-    e.stopPropagation(); // Evitar que se active el click de la tarjeta
-    setResponseData(prev => ({
+    e.stopPropagation();
+    setForm(prev => ({
       ...prev,
       documentosSoporte: prev.documentosSoporte.filter(f => f.id !== fileId)
     }));
   };
 
-  // FUNCIÓN MEJORADA - Abre en nueva pestaña con nombre y logo
   const handleDocumentClick = (doc) => {
     try {
-      console.log("📁 Intentando abrir archivo:", doc);
-
-      // Si el documento tiene un File object (archivo local seleccionado)
       if (doc.file && doc.file instanceof File) {
-        console.log("📄 Abriendo archivo local en nueva pestaña:", doc.file.name);
         openDocumentInNewTab(doc.file, doc.nombre, doc.tipo);
         return;
       }
 
-      // Si el archivo ya tiene una URL directa (archivo subido al backend)
       if (doc.url && !doc.file) {
-        console.log("🔗 Abriendo URL directa en nueva pestaña:", doc.url);
         openDocumentFromUrl(doc.url, doc.nombre);
         return;
       }
 
-      // Si no se puede abrir de ninguna manera
-      console.error("❌ No se puede abrir el archivo - formato no reconocido");
       throw new Error('No se puede abrir el archivo. Formato no soportado.');
-
     } catch (err) {
-      console.error('❌ Error abriendo archivo:', err);
+      console.error('Error abriendo archivo:', err);
       setModal({
         open: true,
         type: 'error',
         title: 'Error al abrir archivo',
-        message: err.message || 'No se pudo abrir el archivo. Verifique que el formato sea compatible.',
+        message: err.message || 'No se pudo abrir el archivo.',
         onConfirm: null,
         confirmText: 'Cerrar',
       });
     }
   };
 
-  // Función para obtener el icono según el tipo de archivo
   const getFileIcon = (nombre) => {
     const extension = nombre?.split('.').pop()?.toLowerCase() || '';
     
@@ -187,79 +171,68 @@ const ResponseRegistration = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!responseData.detalleRespuesta.trim()) {
-      setModal({
-        open: true,
-        type: "error",
-        title: "Detalle faltante",
-        message: "Por favor ingrese el detalle de la respuesta.",
-        onConfirm: null,
-        confirmText: "Cerrar",
+    if (!appeal?.id) {
+      setModal({ 
+        open: true, 
+        type: 'error', 
+        title: 'Apelación no encontrada', 
+        message: 'No hay apelación asociada a esta denuncia.',
+        confirmText: 'Cerrar'
       });
       return;
     }
-
+    
+    if (!form.detalle.trim()) {
+      setModal({ 
+        open: true, 
+        type: 'error', 
+        title: 'Detalle requerido', 
+        message: 'Ingrese el detalle de la respuesta.',
+        confirmText: 'Cerrar'
+      });
+      return;
+    }
+    
     if (!adminId) {
-      setModal({
-        open: true,
-        type: "error",
-        title: "Administrador no encontrado",
-        message: "No se pudo obtener el ID del administrador. Por favor inicie sesión de nuevo.",
-        onConfirm: null,
-        confirmText: "Cerrar",
-      });
-      return;
-    }
-
-    if (!complaintId) {
-      setModal({
-        open: true,
-        type: "error",
-        title: "Denuncia no encontrada",
-        message: "No se encontró el ID de la denuncia. Regrese a la lista de denuncias.",
-        onConfirm: () => navigate("/read_complaint"),
-        confirmText: "Ir a denuncias",
+      setModal({ 
+        open: true, 
+        type: 'error', 
+        title: 'Administrador no encontrado', 
+        message: 'Inicie sesión de nuevo.',
+        confirmText: 'Cerrar'
       });
       return;
     }
 
     setSaving(true);
-
     try {
-      console.log('🔧 URL del backend:', import.meta.env.VITE_API_URL);
-      console.log('📤 Datos a enviar:', {
-        idDenuncia: complaintId,
-        idAdministrador: adminId,
-        detalleRespuesta: responseData.detalleRespuesta,
-        documentosCount: responseData.documentosSoporte?.length || 0
-      });
+      const dto = {
+        apelacionId: appeal.id,
+        adminId: adminId,
+        detalle: form.detalle,
+        resultado: form.resultado
+      };
 
-      const respuestaGuardada = await ResponseService.registrarRespuesta({
-        idDenuncia: complaintId,
-        idAdministrador: adminId,
-        detalleRespuesta: responseData.detalleRespuesta,
-        documentosSoporte: responseData.documentosSoporte
-      });
+      // Enviar solo los objetos File al servicio (form.documentosSoporte contiene wrappers {file, nombre, ...})
+      const archivosAEnviar = (form.documentosSoporte || []).map(d => d.file).filter(Boolean);
+      await AppealResponseService.registrarRespuestaApelacion(dto, archivosAEnviar);
 
-      console.log("✅ Respuesta registrada exitosamente:", respuestaGuardada);
-
-      setModal({
-        open: true,
-        type: "success",
-        title: "Respuesta registrada",
-        message: "La respuesta se registró correctamente. Se actualizará el estado de la denuncia.",
-        onConfirm: () => navigate("/complaint_checkout", { state: { complaintId, responseRegistered: true } }),
-        confirmText: "Ver detalles",
+      setModal({ 
+        open: true, 
+        type: 'success', 
+        title: 'Registrado', 
+        message: 'Respuesta de apelación registrada correctamente.', 
+        onConfirm: () => navigate('/complaint_checkout', { state: { complaintId, responseRegistered: true } }),
+        confirmText: 'Ver detalles'
       });
-    } catch (error) {
-      console.error("❌ Error completo al registrar respuesta:", error);
-      setModal({
-        open: true,
-        type: "error",
-        title: "Error al guardar",
-        message: error?.message ? `Error al guardar la respuesta: ${error.message}` : "Ocurrió un error al guardar la respuesta.",
-        onConfirm: null,
-        confirmText: "Cerrar",
+    } catch (err) {
+      console.error('Error guardando respuesta apelación:', err);
+      setModal({ 
+        open: true, 
+        type: 'error', 
+        title: 'Error', 
+        message: err.message || 'No se pudo registrar la respuesta.',
+        confirmText: 'Cerrar'
       });
     } finally {
       setSaving(false);
@@ -269,21 +242,7 @@ const ResponseRegistration = () => {
   if (loading) {
     return (
       <div style={styles.loadingContainer}>
-        <div style={styles.loadingText}>Cargando información de la denuncia...</div>
-      </div>
-    );
-  }
-
-  if (!complaint) {
-    return (
-      <div style={styles.errorContainer}>
-        <div style={styles.errorText}>No se encontró la denuncia</div>
-        <button 
-          onClick={() => navigate("/read_complaint")}
-          style={styles.backButton}
-        >
-          Volver a denuncias
-        </button>
+        <div style={styles.loadingText}>Cargando información de la apelación...</div>
       </div>
     );
   }
@@ -304,56 +263,90 @@ const ResponseRegistration = () => {
         </button>
       </div>
 
-      {/* Información de la denuncia con datos reales */}
-      <div style={styles.infoCard}>
-        <div style={styles.infoHeader}>
-          <h2 style={styles.infoTitle}>Información de la Denuncia</h2>
-          <span style={{
-            ...styles.badge,
-            backgroundColor: complaint.estado ? '#dbeafe' : '#f3f4f6',
-            color: complaint.estado ? '#1e40af' : '#6b7280'
-          }}>
-            {complaint.estado?.nombre || "Sin estado"}
-          </span>
-        </div>
-        <div style={styles.infoGrid}>
-          <div style={styles.infoItem}>
-            <span style={styles.label}>Título:</span>
-            <span style={styles.value}>{complaint.titulo || "Sin título"}</span>
-          </div>
-          <div style={styles.infoItem}>
-            <span style={styles.label}>Fecha de creación:</span>
-            <span style={styles.value}>
-              {complaint.fechaCreacion ? new Date(complaint.fechaCreacion).toLocaleDateString() : "N/A"}
+      {/* Información de la apelación */}
+      {appeal ? (
+        <div style={styles.infoCard}>
+          <div style={styles.infoHeader}>
+            <h2 style={styles.infoTitle}>Información de la Apelación</h2>
+            <span style={{
+              ...styles.badge,
+              backgroundColor: '#dbeafe',
+              color: '#1e40af'
+            }}>
+              Apelación pendiente
             </span>
           </div>
-          {complaint.descripcion && (
+          <div style={styles.infoGrid}>
             <div style={styles.infoItem}>
-              <span style={styles.label}>Descripción:</span>
-              <span style={styles.value}>{complaint.descripcion}</span>
-            </div>
-          )}
-          {complaint.categorias && complaint.categorias.length > 0 && (
-            <div style={styles.infoItem}>
-              <span style={styles.label}>Categorías:</span>
+              <span style={styles.label}>Fecha de apelación:</span>
               <span style={styles.value}>
-                {complaint.categorias.map(cat => cat.nombre).join(', ')}
+                {appeal.fechaCreacion || appeal.fechaApelacion 
+                  ? new Date(appeal.fechaCreacion || appeal.fechaApelacion).toLocaleDateString() 
+                  : 'N/A'}
               </span>
             </div>
-          )}
+            <div style={styles.infoItem}>
+              <span style={styles.label}>Autor:</span>
+              <span style={styles.value}>
+                {appeal.nombreAutor || appeal.nombre || appeal.usuario || 'Anónimo'}
+              </span>
+            </div>
+            <div style={styles.infoItem}>
+              <span style={styles.label}>Detalle:</span>
+              <span style={styles.value}>
+                {appeal.detalle || appeal.descripcion || 'Sin detalle'}
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div style={styles.infoCard}>
+          <div style={styles.infoHeader}>
+            <h2 style={styles.infoTitle}>Información de la Apelación</h2>
+            <span style={{
+              ...styles.badge,
+              backgroundColor: '#f3f4f6',
+              color: '#6b7280'
+            }}>
+              No encontrada
+            </span>
+          </div>
+          <div style={styles.infoGrid}>
+            <div style={styles.infoItem}>
+              <span style={styles.value}>
+                No se encontró una apelación para esta denuncia. Asegúrese de que exista una apelación pendiente.
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Formulario de respuesta */}
+      {/* Formulario de respuesta a apelación */}
       <form onSubmit={handleSubmit} style={styles.form}>
+        <div style={styles.field}>
+          <label style={styles.fieldLabel}>
+            Resultado de la Apelación <span style={styles.required}>*</span>
+          </label>
+          <select 
+            value={form.resultado} 
+            onChange={(e) => setForm(prev => ({ ...prev, resultado: e.target.value }))} 
+            style={styles.select}
+            onFocus={(e) => Object.assign(e.currentTarget.style, styles.selectFocus)}
+            onBlur={(e) => Object.assign(e.currentTarget.style, styles.select)}
+          >
+            <option value="ACEPTADA">Aceptada</option>
+            <option value="RECHAZADA">Rechazada</option>
+          </select>
+        </div>
+
         <div style={styles.field}>
           <label style={styles.fieldLabel}>
             Detalle de la Respuesta <span style={styles.required}>*</span>
           </label>
           <textarea
-            value={responseData.detalleRespuesta}
-            onChange={(e) => setResponseData(prev => ({ ...prev, detalleRespuesta: e.target.value }))}
-            placeholder="Describa detalladamente la respuesta dada a la denuncia, incluyendo acciones tomadas, resultados de investigación y decisiones..."
+            value={form.detalle}
+            onChange={(e) => setForm(prev => ({ ...prev, detalle: e.target.value }))}
+            placeholder="Describa detalladamente la respuesta a la apelación, incluyendo la justificación de la decisión..."
             style={styles.textarea}
             rows={8}
             required
@@ -362,11 +355,9 @@ const ResponseRegistration = () => {
             onBlur={(e) => Object.assign(e.currentTarget.style, styles.textarea)}
           />
           <div style={styles.charCount}>
-            {responseData.detalleRespuesta.length} / 2000 caracteres
+            {form.detalle.length} / 2000 caracteres
           </div>
         </div>
-
-        
 
         <div style={styles.field}>
           <label style={styles.fieldLabel}>
@@ -394,12 +385,12 @@ const ResponseRegistration = () => {
             </label>
           </div>
 
-          {responseData.documentosSoporte.length > 0 && (
+          {form.documentosSoporte.length > 0 && (
             <div style={styles.documentsList}>
               <div style={styles.documentsTitle}>
-                Documentos de Soporte ({responseData.documentosSoporte.length})
+                Documentos de Soporte ({form.documentosSoporte.length})
               </div>
-              {responseData.documentosSoporte.map((doc, index) => {
+              {form.documentosSoporte.map((doc, index) => {
                 const esPdf = doc.nombre?.toLowerCase().endsWith('.pdf') || 
                              doc.tipo === 'application/pdf';
                 
@@ -454,8 +445,8 @@ const ResponseRegistration = () => {
         <div style={styles.warning}>
           <div style={styles.warningIcon}>⚠️</div>
           <div style={styles.warningText}>
-            <strong>Importante:</strong> Una vez registrada la respuesta, el estado de la denuncia 
-            se actualizará automáticamente a "Respondida" y se calculará la fecha límite de apelación.
+            <strong>Importante:</strong> Una vez registrada la respuesta a la apelación, 
+            el proceso de denuncia será finalizado según el resultado seleccionado.
           </div>
         </div>
 
@@ -521,19 +512,6 @@ const styles = {
     color: "#000000",
   },
 
-  errorContainer: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: "100vh",
-    background: "#f9fafb",
-  },
-
-  errorText: {
-    fontSize: "1.25rem",
-    color: "#dc2626",
-  },
-
   header: {
     marginBottom: "1rem",
   },
@@ -583,8 +561,6 @@ const styles = {
 
   badge: {
     padding: "6px 14px",
-    background: "#dbeafe",
-    color: "#1e40af",
     borderRadius: 20,
     fontSize: "0.875rem",
     fontWeight: 600,
@@ -636,6 +612,23 @@ const styles = {
     color: "#dc2626",
   },
 
+  select: {
+    width: "200px",
+    padding: "10px 14px",
+    fontSize: "0.95rem",
+    color: "#000000",
+    background: "#ffffff",
+    border: "1px solid #cbd5e1",
+    borderRadius: 8,
+    outline: "none",
+    transition: "border-color 0.2s, box-shadow 0.2s",
+  },
+
+  selectFocus: {
+    borderColor: "#dc2626",
+    boxShadow: "0 0 0 3px rgba(220,38,38,0.1)",
+  },
+
   textarea: {
     width: "100%",
     boxSizing: "border-box",
@@ -662,29 +655,6 @@ const styles = {
     color: "#000000",
     textAlign: "right",
     marginBottom: "-1rem",
-  },
-
-  numberInput: {
-    width: "200px",
-    padding: "10px 14px",
-    fontSize: "0.95rem",
-    color: "#000000",
-    background: "#ffffff",
-    border: "1px solid #cbd5e1",
-    borderRadius: 8,
-    outline: "none",
-    transition: "border-color 0.2s, box-shadow 0.2s",
-  },
-
-  inputFocus: {
-    borderColor: "#dc2626",
-    boxShadow: "0 0 0 3px rgba(220,38,38,0.1)",
-  },
-
-  helpText: {
-    marginTop: "0.5rem",
-    fontSize: "0.875rem",
-    color: "#64748b",
   },
 
   uploadArea: {
@@ -756,7 +726,6 @@ const styles = {
     borderRadius: "0.5rem",
     cursor: "pointer",
     transition: "all 0.2s ease",
-    borderLeft: "4px solid #3b82f6"
   },
 
   documentIcon: {
@@ -840,4 +809,4 @@ const styles = {
   },
 };
 
-export default ResponseRegistration;
+export default AppealRegistration;

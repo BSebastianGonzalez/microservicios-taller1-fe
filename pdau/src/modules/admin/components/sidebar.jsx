@@ -46,7 +46,7 @@ const Sidebar = ({ adminData }) => {
       setSelectedSection("Revisión de Denuncia Archivada");
     else if (p.startsWith("/stats")) 
       setSelectedSection("Generar indicadores de gestión");
-    else if (p.startsWith("/statistics")) setSelectedSection("Generar estadísticas");
+    else if (p.startsWith("/statistics_complaint")) setSelectedSection("Generar estadísticas");
     else if (p.startsWith("/reports/new"))
       setSelectedSection("Generar reportes");
     else if (p.startsWith("/reports")) setSelectedSection("Consultar reportes");
@@ -298,7 +298,7 @@ const Sidebar = ({ adminData }) => {
               )}
               onMouseEnter={() => setHoverId("estadisticas-gen")}
               onMouseLeave={() => setHoverId(null)}
-              onClick={() => go("/statistics", "Generar estadísticas")}
+              onClick={() => go("/statistics_complaint", "Generar estadísticas")}
             >
               <FiChevronRight style={styles.chevIcon} />
               <span style={styles.dropdownText}>Generar estadísticas</span>

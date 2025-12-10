@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FiFilter, FiFileText } from "react-icons/fi";
 import ComplaintService from "../../../../services/ComplaintService";
 import ResponseService from "../../../../services/ResponseService";
+import AppealService from "../../../../services/AppealService";
 import ListContainer from "../../../../components/ListContainer";
 
 const ComplaintsList = () => {
@@ -172,31 +173,42 @@ useEffect(() => {
     try {
       const enriched = await Promise.all(
         currentComplaints.map(async (complaint) => {
-          // Si ya tenemos fechaRespuesta, omitimos la petición
-          if (complaint.fechaRespuesta !== undefined) return complaint;
-          
+          // Si ya tenemos fechaRespuesta y tieneApelacion, omitimos la petición
+          if (complaint.fechaRespuesta !== undefined && complaint.tieneApelacion !== undefined) return complaint;
+
+          const result = { ...complaint };
+
           try {
-            const response = await ResponseService.obtenerRespuesta(complaint.id);
-            
-            // response ahora siempre será un objeto, nunca null
+            const [response, appeal] = await Promise.all([
+              (complaint.fechaRespuesta === undefined) ? ResponseService.obtenerRespuesta(complaint.id) : Promise.resolve({ fechaRespuesta: complaint.fechaRespuesta }),
+              (complaint.tieneApelacion === undefined) ? AppealService.obtenerPorDenuncia(complaint.id).catch(() => null) : Promise.resolve(complaint.tieneApelacion ? [{}] : null)
+            ]);
+
             if (response && response.fechaRespuesta) {
-              console.log(`Respuesta encontrada para denuncia ${complaint.id}:`, response.fechaRespuesta);
-              return { 
-                ...complaint, 
-                fechaRespuesta: response.fechaRespuesta 
-              };
-            } else {
-              console.log(`No hay respuesta para denuncia ${complaint.id}`);
-              return { 
-                ...complaint, 
-                fechaRespuesta: null 
-              };
+              result.fechaRespuesta = response.fechaRespuesta;
+            } else if (result.fechaRespuesta === undefined) {
+              result.fechaRespuesta = null;
             }
+
+            // appeal puede ser null, objeto, o arreglo. Normalizar a booleano
+            let tieneAp = false;
+            if (Array.isArray(appeal)) {
+              tieneAp = appeal.length > 0;
+            } else if (appeal && typeof appeal === 'object') {
+              // Si backend devuelve un objeto con contenido
+              tieneAp = Object.keys(appeal).length > 0;
+            } else {
+              tieneAp = !!appeal;
+            }
+
+            result.tieneApelacion = tieneAp;
+            return result;
           } catch (error) {
-            console.warn(`Error obteniendo respuesta para denuncia ${complaint.id}:`, error);
+            console.warn(`Error enriqueciendo denuncia ${complaint.id}:`, error);
             return { 
               ...complaint, 
-              fechaRespuesta: null 
+              fechaRespuesta: complaint.fechaRespuesta !== undefined ? complaint.fechaRespuesta : null,
+              tieneApelacion: complaint.tieneApelacion !== undefined ? complaint.tieneApelacion : false
             };
           }
         })
@@ -213,9 +225,13 @@ useEffect(() => {
           const originalIndex = indexOfFirstItem + i;
           const originalComplaint = prev[originalIndex];
           const enrichedComplaint = enriched[i];
-          
-          if (originalComplaint && 
-              originalComplaint.fechaRespuesta !== enrichedComplaint.fechaRespuesta) {
+
+          if (!originalComplaint) continue;
+
+          const fechaChanged = originalComplaint.fechaRespuesta !== enrichedComplaint.fechaRespuesta;
+          const apelacionChanged = originalComplaint.tieneApelacion !== enrichedComplaint.tieneApelacion;
+
+          if (fechaChanged || apelacionChanged) {
             newFiltered[originalIndex] = enrichedComplaint;
             hasChanges = true;
           }
@@ -228,12 +244,12 @@ useEffect(() => {
     }
   };
 
-  // Solo ejecutar si hay denuncias sin fechaRespuesta
-  const hasComplaintsWithoutDate = currentComplaints.some(
-    complaint => complaint.fechaRespuesta === undefined
+  // Solo ejecutar si hay denuncias sin fechaRespuesta o sin flag de apelación
+  const hasComplaintsToEnrich = currentComplaints.some(
+    complaint => complaint.fechaRespuesta === undefined || complaint.tieneApelacion === undefined
   );
-  
-  if (hasComplaintsWithoutDate) {
+
+  if (hasComplaintsToEnrich) {
     fetchResponseDatesForPage();
   }
   
@@ -329,14 +345,15 @@ useEffect(() => {
           <table style={styles.table}>
             <thead>
               <tr>
-                  <th style={{ ...styles.th, width: "40%" }}>Título de denuncia</th>
-                  <th style={{ ...styles.th, width: "15%" }}>Fecha de realización</th>
-                  <th style={{ ...styles.th, width: "15%" }}>Fecha de respuesta</th>
-                  <th style={{ ...styles.th, width: "15%" }}>Estado</th>
-                  <th style={{ ...styles.th, width: "15%", textAlign: "center" }}>
-                    Acciones
-                  </th>
-                </tr>
+                    <th style={{ ...styles.th, width: "30%" }}>Título de denuncia</th>
+                    <th style={{ ...styles.th, width: "12%" }}>Fecha de realización</th>
+                    <th style={{ ...styles.th, width: "12%" }}>Fecha de respuesta</th>
+                    <th style={{ ...styles.th, width: "12%" }}>Estado</th>
+                    <th style={{ ...styles.th, width: "8%", textAlign: "center" }}>Apelación</th>
+                    <th style={{ ...styles.th, width: "26%", textAlign: "center" }}>
+                      Acciones
+                    </th>
+                  </tr>
             </thead>
             <tbody>
               {currentComplaints.map((c) => (
@@ -354,25 +371,41 @@ useEffect(() => {
                   <td style={styles.td}>{formatDate(c.fechaCreacion)}</td>
                   <td style={styles.td}>{formatDate(c.fechaRespuesta)}</td>
                   <td style={styles.td}>{c.estado?.nombre || "N/A"}</td>
-                    <td style={{ ...styles.td, textAlign: "center" }}>
-                      <button
-                        style={styles.linkBtn}
-                        type="button"
-                        onClick={() =>
-                          navigate("/complaint_checkout", {
-                            state: { complaintId: c.id },
-                          })
-                        }
-                      >
-                        <FiFileText size={18} />
-                        <span>Revisar denuncia</span>
-                      </button>
+                  <td style={{ ...styles.td, textAlign: 'center', fontWeight: 700 }}>
+                    {c.tieneApelacion ? 'Sí' : 'No'}
+                  </td>
+                    <td style={{ ...styles.tdActions, textAlign: "center" }}>
+                      <div style={{ display: 'flex', gap: '0rem', justifyContent: 'center' }}>
+                        <button
+                          style={styles.linkBtn}
+                          type="button"
+                          onClick={() =>
+                            navigate("/complaint_checkout", {
+                              state: { complaintId: c.id },
+                            })
+                          }
+                        >
+                          <FiFileText size={18} />
+                          <span>Revisar denuncia</span>
+                        </button>
+
+                        {c.tieneApelacion && (
+                          <button
+                            style={styles.linkBtn}
+                            type="button"
+                            onClick={() => navigate('/appeal_response', { state: { complaintId: c.id } })}
+                          >
+                            <FiFileText size={18} />
+                            <span>Ver apelación</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
                 </tr>
               ))}
               {currentComplaints.length === 0 && (
                 <tr>
-                  <td colSpan={5} style={styles.emptyCell}>
+                  <td colSpan={6} style={styles.emptyCell}>
                     {complaints.length === 0 
                       ? "No hay denuncias registradas." 
                       : "No hay resultados para los filtros aplicados."
@@ -586,7 +619,7 @@ const styles = {
     background: "#fff",
   },
   table: {
-    width: "100%",
+    width: "calc(100% - 0px)",
     borderCollapse: "collapse",
     tableLayout: "fixed",
     fontFamily: "'Inter','Segoe UI', Arial, sans-serif",
@@ -604,7 +637,7 @@ const styles = {
     borderBottom: "1px solid #d1d5db",
   },
   td: {
-    padding: "12px 14px",
+    padding: "12px 10px 12px 8px",
     fontSize: "0.98rem",
     color: "#111827",
     overflow: "hidden",
@@ -612,11 +645,19 @@ const styles = {
     whiteSpace: "nowrap",
   },
   tdTitle: {
-    padding: "12px 14px",
+    padding: "12px 10px 12px 8px",
     fontSize: "1rem",
     color: "#2563eb",
     cursor: "pointer",
     textDecoration: "none",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  tdActions: {
+    padding: "10px 0px 10px 0px",
+    fontSize: "0.98rem",
+    color: "#111827",
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",

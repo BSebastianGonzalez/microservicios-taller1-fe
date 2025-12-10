@@ -24,6 +24,10 @@ import ResponseRegistrationPage from "./pages/admin/Responseregistrationpage";
 import ManagementIndicatorsPage from './pages/admin/ManagementIndicatorsPage';
 import ArchivedData from './modules/admin/components/archived_complaint/ArchivedSection';
 import ArchivedComplaintCheckout from './pages/complaint/ArchivedComplaintCheckout';
+import AppealRegister from './pages/user/AppealRegister';
+import AppealResponse from './pages/complaint/AppealResponse';
+import AppealRegistrationPage from './pages/admin/AppealRegistration';
+import StatisticsComplaint from './pages/admin/StatisticsComplaint';
 import { Route, Routes, BrowserRouter } from 'react-router-dom'
 
 function App() {
@@ -37,6 +41,7 @@ function App() {
         <Route path="/finished_register" element={<ComplaintCreated />} />
         <Route path="/consult" element={<ComplaintConsult />} />
         <Route path="/consult_response" element={<ConsultResponse />} />
+        <Route path="/appeal_register" element={<AppealRegister />} />
         <Route path="/law_frame" element={<LawFrame />} />
         <Route path="/statistics_public" element={<StatisticsView />} />
         <Route path="/:id" element={<ViewLaw />} />
@@ -54,7 +59,13 @@ function App() {
         <Route path="/read_complaint" element={<ViewComplaints />} />
         <Route path="/complaint_checkout" element={<ComplaintCheckout />} />
         <Route path="/response_registration" element={<ResponseRegistrationPage />} />
+        
+        <Route path="/appeal_response" element={<AppealResponse />} />
+        <Route path="/appeal_registration" element={<AppealRegistrationPage />} />
+        
         <Route path="/stats" element={<ManagementIndicatorsPage />} />
+        <Route path="/statistics_complaint" element={<StatisticsComplaint />} />
+
 
         <Route path="/archived_complaints" element={<ViewArchivedComplaints />} />
         <Route path="/archived_checkout" element={<ArchivedComplaintCheckout />} />

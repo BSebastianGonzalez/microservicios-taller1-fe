@@ -5,6 +5,7 @@ import StateChangeService from "../../../services/StateChangeService";
 import FileComplaintService from "../../../services/FileComplaintService";
 import ArchivingHistory from "../components/archived_complaint/ArchivingHistory";
 import ResponseService from "../../../services/ResponseService";
+import AppealResponseService from "../../../services/AppealResponseService";
 import ChangeStateModal from "../components/standard_complaint/ChangeStateModal";
 import StateChangeHistory from "../components/standard_complaint/StateChangeHistory";
 import FileComplaintModal from "../components/standard_complaint/FileComplaint";
@@ -16,6 +17,7 @@ import ComplaintNotFound from "../components/standard_complaint/ComplaintNotFoun
 import CommentSection from "../components/standard_complaint/CommentSection";
 import ResponseViewer from "../components/standard_complaint/ResponseViewer";
 import Button from "../../../components/Button";
+import { FiExternalLink, FiFileText } from "react-icons/fi";
 
 const ComplaintData = () => {
   const location = useLocation();
@@ -25,6 +27,8 @@ const ComplaintData = () => {
   const [loading, setLoading] = useState(true);
   const [response, setResponse] = useState(null);
   const [loadingResponse, setLoadingResponse] = useState(false);
+  const [appealResponse, setAppealResponse] = useState(null);
+  const [loadingAppealResponse, setLoadingAppealResponse] = useState(false);
   const [error, setError] = useState(null);
 
   // Modal state
@@ -157,6 +161,29 @@ const ComplaintData = () => {
     fetchResponse();
   }, [complaintId]);
 
+  // Cargar la respuesta de apelación asociada a la denuncia (si existe)
+  useEffect(() => {
+    const fetchAppealResponse = async () => {
+      if (!complaintId) return;
+
+      setLoadingAppealResponse(true);
+      try {
+        const ar = await AppealResponseService.obtenerPorDenuncia(complaintId);
+        // Normalizar respuesta
+        const processed = Array.isArray(ar) ? (ar[0] || null) : (ar || null);
+        setAppealResponse(processed);
+      } catch (err) {
+        console.warn('No se pudo cargar la respuesta de apelación:', err);
+        setAppealResponse(null);
+      } finally {
+        setLoadingAppealResponse(false);
+      }
+    };
+
+    // Ejecutar cuando exista la respuesta de denuncia o siempre que cambie la denuncia
+    fetchAppealResponse();
+  }, [complaintId, response]);
+
   useEffect(() => {
     if (location.state?.responseRegistered) {
       setShowResponseSuccess(true);
@@ -240,6 +267,56 @@ const ComplaintData = () => {
     });
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return 'Fecha inválida';
+      return d.toLocaleDateString('es-ES', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+    } catch {
+      return 'Fecha inválida';
+    }
+  };
+
+  const getAppealDetail = () => {
+    if (!appealResponse) return "No se proporcionó un detalle para la respuesta de apelación.";
+    return (
+      appealResponse.detalle ||
+      appealResponse.descripcion ||
+      appealResponse.contenido ||
+      "No se proporcionó un detalle para la respuesta de apelación."
+    );
+  };
+
+  const handleAppealDocumentClick = (doc) => {
+    if (!doc?.url) return;
+    window.open(doc.url, "_blank", "noopener,noreferrer");
+  };
+
+  const getAppealFileIcon = (nombre) => {
+    const extension = nombre?.split(".").pop()?.toLowerCase() || "";
+
+    switch (extension) {
+      case "pdf":
+        return <FiFileText style={{ ...styles.appealDocumentIcon, color: "#dc2626" }} />;
+      case "doc":
+      case "docx":
+        return <FiFileText style={{ ...styles.appealDocumentIcon, color: "#2563eb" }} />;
+      case "xls":
+      case "xlsx":
+        return <FiFileText style={{ ...styles.appealDocumentIcon, color: "#059669" }} />;
+      case "jpg":
+      case "jpeg":
+      case "png":
+      case "gif":
+        return <FiFileText style={{ ...styles.appealDocumentIcon, color: "#7c3aed" }} />;
+      default:
+        return <FiFileText style={styles.appealDocumentIcon} />;
+    }
+  };
+
   if (loading) return <ComplaintLoader />;
 
   if (error) {
@@ -317,6 +394,99 @@ const ComplaintData = () => {
                   </p>
                 </div>
               )}
+
+              {!loadingAppealResponse && appealResponse && (
+                <div style={styles.appealResponseSection}>
+                  <div style={styles.appealHeader}>
+                    <div style={styles.appealHeaderLeft}>
+                      <svg style={styles.appealCheckIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <h3 style={styles.appealTitle}>Respuesta a Apelación</h3>
+                    </div>
+                    <span style={styles.appealStatusBadge}>Respondida</span>
+                  </div>
+
+                  <div style={styles.appealInfoGrid}>
+                    <div style={styles.appealInfoItem}>
+                      <span style={styles.appealInfoLabel}>Fecha de respuesta:</span>
+                      <span style={styles.appealInfoValue}>
+                        {formatDate(appealResponse.fechaRespuesta || appealResponse.fechaCreacion || appealResponse.createdAt)}
+                      </span>
+                    </div>
+                    <div style={styles.appealInfoItem}>
+                      <span style={styles.appealInfoLabel}>Administrador responsable:</span>
+                      <span style={styles.appealInfoValue}>
+                        {appealResponse.administrador?.nombre || appealResponse.adminNombre || appealResponse.admin || "No especificado"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={styles.appealSection}>
+                    <h4 style={styles.appealSectionTitle}>Detalle de la Respuesta</h4>
+                    <div style={styles.appealResponseDetail}>
+                      {getAppealDetail()}
+                    </div>
+                  </div>
+
+                  {(appealResponse.archivos?.length > 0 || appealResponse.documentos?.length > 0) && (
+                    <div style={styles.appealSection}>
+                      <h4 style={styles.appealSectionTitle}>
+                        Documentos de Soporte {(appealResponse.archivos || appealResponse.documentos).length ? `(${(appealResponse.archivos || appealResponse.documentos).length})` : ""}
+                      </h4>
+                      <div style={styles.appealDocumentsList}>
+                        {(appealResponse.archivos || appealResponse.documentos || []).map((doc, i) => {
+                          const docName = doc.nombre || doc.fileName || doc.name || `Documento ${i + 1}`;
+                          const docUrl = doc.url || doc.ruta || doc.fileUrl || doc.path || null;
+                          const docSize = doc.tamaño || doc.tamano || doc.size;
+                          const isPdf = docName.toLowerCase().endsWith(".pdf") || doc.tipoContenido === "application/pdf";
+                          const isAvailable = Boolean(docUrl);
+
+                          return (
+                            <div
+                              key={doc.id || i}
+                              style={{
+                                ...styles.appealDocumentCard,
+                                cursor: isAvailable ? "pointer" : "default",
+                                opacity: isAvailable ? 1 : 0.75,
+                                borderLeft: `4px solid ${isPdf ? "#dc2626" : "#3b82f6"}`
+                              }}
+                              onClick={() => isAvailable && handleAppealDocumentClick({ ...doc, url: docUrl })}
+                              onMouseEnter={(e) => {
+                                if (isAvailable) {
+                                  e.currentTarget.style.backgroundColor = "#f8fafc";
+                                  e.currentTarget.style.borderColor = "#3b82f6";
+                                  e.currentTarget.style.transform = "translateY(-1px)";
+                                  e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ffffff";
+                                e.currentTarget.style.borderColor = "#e5e7eb";
+                                e.currentTarget.style.transform = "translateY(0)";
+                                e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.05)";
+                              }}
+                            >
+                              {getAppealFileIcon(docName)}
+                              <div style={styles.appealDocumentInfo}>
+                                <span style={styles.appealDocumentName}>{docName}</span>
+                                {docSize && <span style={styles.appealDocumentSize}>{docSize}</span>}
+                              </div>
+                              <div style={styles.appealDocumentActions}>
+                                {isAvailable ? (
+                                  <FiExternalLink style={styles.appealActionIcon} title="Abrir en nueva pestaña" />
+                                ) : (
+                                  <span style={styles.appealUnavailableText}>No disponible</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
 
@@ -344,6 +514,14 @@ const ComplaintData = () => {
               />
             </div>
           )}
+          {/* Botón para registrar respuesta de apelación (debajo del historial si existe) */}
+          <div style={{ marginTop: "0.5rem" }}>
+            <Button
+              text="Registrar respuesta a apelación"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => navigate('/appeal_registration', { state: { complaintId } })}
+            />
+          </div>
         </div>
       </div>
 
@@ -454,7 +632,6 @@ const styles = {
     cursor: "pointer",
     fontWeight: "600",
   },
-  // ... (mantén el resto de los estilos igual)
   registerResponseSection: {
     backgroundColor: "#f0f9ff",
     border: "2px solid #bae6fd",
@@ -537,6 +714,164 @@ const styles = {
   },
   commentsSection: {
     marginTop: "1rem",
+  },
+  appealResponseSection: {
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 12,
+    padding: "1.5rem",
+    marginTop: "1.5rem",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
+    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+  },
+
+  appealHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "1.5rem",
+    paddingBottom: "1rem",
+    borderBottom: "2px solid #e5e7eb",
+  },
+
+  appealHeaderLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.75rem",
+  },
+
+  appealCheckIcon: {
+    width: 32,
+    height: 32,
+    color: "#059669",
+  },
+
+  appealTitle: {
+    fontSize: "1.5rem",
+    fontWeight: 700,
+    color: "#0f172a",
+    margin: 0,
+  },
+
+  appealStatusBadge: {
+    padding: "6px 14px",
+    background: "#d1fae5",
+    color: "#065f46",
+    borderRadius: 20,
+    fontSize: "0.875rem",
+    fontWeight: 600,
+  },
+
+  appealInfoGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+    gap: "1rem",
+    marginBottom: "1.5rem",
+    padding: "1rem",
+    background: "#f9fafb",
+    borderRadius: 8,
+  },
+
+  appealInfoItem: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.25rem",
+  },
+
+  appealInfoLabel: {
+    fontSize: "0.875rem",
+    fontWeight: 600,
+    color: "#6b7280",
+  },
+
+  appealInfoValue: {
+    fontSize: "1rem",
+    fontWeight: 500,
+    color: "#0f172a",
+  },
+
+  appealSection: {
+    marginBottom: "1.5rem",
+  },
+
+  appealSectionTitle: {
+    fontSize: "1.125rem",
+    fontWeight: 700,
+    color: "#1e293b",
+    marginBottom: "0.75rem",
+  },
+
+  appealResponseDetail: {
+    padding: "1.25rem",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    borderRadius: 8,
+    color: "#334155",
+    fontSize: "0.95rem",
+    lineHeight: 1.6,
+    whiteSpace: "pre-wrap",
+    minHeight: "80px",
+  },
+
+  appealDocumentsList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.5rem",
+  },
+
+  appealDocumentCard: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.75rem",
+    padding: "0.75rem",
+    backgroundColor: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "0.5rem",
+    transition: "all 0.2s ease",
+    borderLeft: "4px solid #3b82f6",
+    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+  },
+
+  appealDocumentIcon: {
+    fontSize: "1.25rem",
+    color: "#6b7280",
+    flexShrink: 0,
+  },
+
+  appealDocumentInfo: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.25rem",
+    flex: 1,
+  },
+
+  appealDocumentName: {
+    fontWeight: "600",
+    color: "#000000",
+    fontSize: "0.9rem",
+    wordBreak: "break-word",
+  },
+
+  appealDocumentSize: {
+    color: "#6b7280",
+    fontSize: "0.8rem",
+  },
+
+  appealDocumentActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+  },
+
+  appealActionIcon: {
+    fontSize: "1rem",
+    color: "#6b7280",
+  },
+
+  appealUnavailableText: {
+    color: "#9ca3af",
+    fontSize: "0.8rem",
+    fontStyle: "italic",
   },
 };
 

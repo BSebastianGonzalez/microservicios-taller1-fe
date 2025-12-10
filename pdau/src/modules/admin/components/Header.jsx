@@ -82,10 +82,13 @@ const Header = () => {
       '/personal_documents': 'Mis documentos personales',
       '/read_complaint': 'Denuncias Anónimas',
       '/complaint_checkout': 'Revisión de Denuncia',
+      '/appeal_response': 'Revisar Apelación',
+      '/appeal_registration': 'Registrar Apelación',
       '/response_registration': 'Registrar Respuesta a Denuncia',
       '/archived_complaints': 'Denuncias Archivadas',
       '/archived_checkout': 'Revisión de Denuncia Archivada',
       '/stats': 'Indicadores de Gestión de Denuncias Anonimas',
+      '/statistics_complaint': 'Estadísticas de denuncias',
       '/reports': 'Reportes',
       '/admin_change_password': 'Cambiar contraseña'
     };

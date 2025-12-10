@@ -172,7 +172,7 @@ const ResponseViewer = ({ response }) => {
       const startDate = new Date(response.fechaRespuesta);
       if (isNaN(startDate.getTime())) return "Fecha inválida";
 
-      const daysToAdd = response.diasApelacion || 5;
+      const daysToAdd = response.diasApelacion || 10;
       const deadline = new Date(startDate);
       deadline.setDate(deadline.getDate() + daysToAdd);
       
@@ -348,7 +348,7 @@ const ResponseViewer = ({ response }) => {
         </svg>
         <div style={styles.appealText}>
           <strong>Plazo de apelación:</strong> El denunciante tiene{" "}
-          <strong>{response.diasApelacion || 5} días</strong> desde la fecha de respuesta 
+          <strong>{response.diasApelacion || 10} días</strong> desde la fecha de respuesta 
           para presentar una apelación o solicitud de reposición.
         </div>
       </div>
